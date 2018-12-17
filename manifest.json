@@ -1,0 +1,24 @@
+{
+  "name": "QuiccMath",
+  "description": "Add math inputs to the current web page",
+  "version": "0.0.1",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "http://*/",
+    "https://*/"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "web_accessible_resources": [
+    "main.html",
+    "main.js",
+    "js/jquery-3.3.1.min.js"
+  ],
+  "browser_action": {
+    "default_title": "Insert easy math input"
+  },
+  "manifest_version": 2
+}
