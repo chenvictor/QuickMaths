@@ -52,7 +52,6 @@ window.addEventListener("load", () => {
     });
 
     function escape() {
-        console.log("escape!");
         top.postMessage({
             type: -1
         }, "*");
@@ -60,7 +59,6 @@ window.addEventListener("load", () => {
 
     function confirm() {
         let text = mathField.text();
-        console.log("input: %s", text);
         saveInput(text, mathField.latex());
         top.postMessage({
             type: 1,
@@ -87,5 +85,7 @@ window.addEventListener("load", () => {
         } else {
             mathField.latex('');    //Clears the input
         }
+        //focus mathfield
+        mathField.focus();
     }
 });

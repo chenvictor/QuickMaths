@@ -1,10 +1,4 @@
-if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") != null) {
-    //already injected
-
-} else {
-
-    console.log("Hello");
-
+if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") == null) {
     let inputs = document.getElementsByTagName('input');
     for (let i = 0; i < inputs.length; i++) {
         let input = inputs[i];
@@ -17,13 +11,23 @@ if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") != null
     function inject(input) {
         let btn = document.createElement('button');
         btn.innerText = "QM";
-        btn.classList.add("majestic");
+        btn.style = `
+            transition: opacity 0.25s ease-in-out;
+            opacity: 0;
+        `;
         btn.addEventListener("click", e => {
             e.preventDefault();
             showFrame(input);
         });
         input.parentNode.insertBefore(btn, input.nextSibling);
-        // input.append(btn);
+
+        input.addEventListener('focus', () => {
+            btn.style.opacity = "1";
+        });
+
+        input.addEventListener('blur', () => {
+            btn.style.opacity = "0";
+        })
     }
 
 //add frame
@@ -54,10 +58,10 @@ if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") != null
             switch (type) {
                 case 1:
                     let input = event.data.input;
-                    // console.log("input: %s", input);
                     setInput(input);
                 case -1:                            //Fallthrough switch
                     hideFrame();
+                    GLOBAL_INPUT.focus();
                     return;
             }
         }
@@ -68,7 +72,6 @@ if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") != null
 
     function showFrame(input) {
         GLOBAL_INPUT = input;
-        // console.log("Showing frame");
 
         frame.contentWindow.postMessage({
             type: 0,
@@ -78,7 +81,7 @@ if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") != null
         frame.style.display = "inline";
         setTimeout(() => {
             frame.style.opacity = "1";
-        }, 5);
+        }, 5);  //small delay to allow CSS to transition properly
     }
 
     function setInput(value) {
@@ -86,7 +89,6 @@ if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") != null
     }
 
     function hideFrame() {
-        // console.log("Hiding frame");
         frame.style.opacity = "0";
         setTimeout(() => {
             frame.style.display = "none";

@@ -1,7 +1,7 @@
 {
   "name": "QuiccMath",
   "description": "Add math inputs to the current web page",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "permissions": [
     "activeTab",
     "tabs",
