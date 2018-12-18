@@ -1,0 +1,28 @@
+body {
+    width: 100%;
+    font-size: 20px;
+    font-family: Roboto, 'Segoe UI', Tahoma, sans-serif;
+    padding: 0;
+}
+
+#content {
+    margin: 4em auto auto;
+    width: 100%;
+    max-width: 500px;
+    background-color: #9acfea;
+    padding: 1em;
+    border-radius: 10px;
+}
+
+#banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: whitesmoke;
+    text-align: center;
+    vertical-align: center;
+    height: 2rem;
+    transition: margin-top 0.25s ease-out;
+    margin-top: -2rem;
+}
