@@ -10,11 +10,21 @@ if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") == null
 // Injects buttons onto the inputs
     function inject(input) {
         let btn = document.createElement('button');
+
         btn.innerText = "QM";
         btn.style = `
             transition: opacity 0.25s ease-in-out;
             opacity: 0;
+            position: absolute;
+            z-index: 100;
+            background-color: skyblue;
+            border: none;
+            border-radius: 6px;
+            top: 0;
+            left: 0;
+            cursor: pointer;
         `;
+        btn.tabIndex = -1;  //don't want the user to tab to here
         btn.addEventListener("click", e => {
             e.preventDefault();
             showFrame(input);
@@ -22,12 +32,27 @@ if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") == null
         input.parentNode.insertBefore(btn, input.nextSibling);
 
         input.addEventListener('focus', () => {
+            let rect = input.getBoundingClientRect();
+            let btnHeight = btn.getBoundingClientRect().height;
+            let rectHeight = (rect.top - rect.bottom);
+            let margin = (-btnHeight - rectHeight) / 2;
+            let text = "translate(" + Math.round(rect.right + document.documentElement.scrollLeft + 5) + "px , " +
+                Math.round(margin + rect.top + document.documentElement.scrollTop) +"px)";
+            btn.style.transform = text
+            // console.log("Transform to: %s", text);
             btn.style.opacity = "1";
         });
 
         input.addEventListener('blur', () => {
             btn.style.opacity = "0";
-        })
+        });
+        if (document.activeElement === input) {
+            //Refocus to show QM
+            input.blur();
+            setTimeout(() => {
+                input.focus();
+            }, 5);
+        }
     }
 
 //add frame
@@ -94,4 +119,6 @@ if (document.getElementById("suchARandomIdwhywould131anyonepickthis124") == null
             frame.style.display = "none";
         }, 250);
     }
+
+
 }

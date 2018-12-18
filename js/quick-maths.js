@@ -19,18 +19,27 @@ window.addEventListener("load", () => {
 
     let elem = document.getElementById("mathQuill");
     let preview = document.getElementById("mathPreview");
+    let editTimeout;
+    let formattedText = "";
+
+    const EDIT_TIMEOUT_DUR = 50;  //50 ms between edit and preview
 
     const mathField = MQuill.MathField(elem, {
         spaceBehavesLikeTab: true,
         autoCommands: 'pi theta sqrt',
-        autoOperatorNames: 'sin cos',
+        autoOperatorNames: 'sin cos tan',
         handlers: {
             enter: function () {
                 confirm();
             },
             edit: function (field) {
-                let text = field.text();
-                preview.textContent = text.length > 0 ? text : "Preview";
+                field.data.synced = false;
+                clearTimeout(editTimeout);
+                editTimeout = setTimeout(() => {
+                    formattedText = reformat(field.text());
+                    preview.textContent = formattedText.length > 0 ? formattedText : "Preview";
+                    field.data.synced = true;
+                }, EDIT_TIMEOUT_DUR);
             }
         }
     });
@@ -58,11 +67,12 @@ window.addEventListener("load", () => {
     }
 
     function confirm() {
-        let text = mathField.text();
-        saveInput(text, mathField.latex());
+        if (mathField.data.synced === false) {
+            formattedText = reformat(mathField.text());
+        }
         top.postMessage({
             type: 1,
-            input: text,
+            input: formattedText,
         }, "*");
     }
 
@@ -72,20 +82,179 @@ window.addEventListener("load", () => {
         }
     });
 
-    let DICT = {};
-
-    function saveInput(input, latex) {
-        DICT[input] = latex;
-    }
-
     function passInput(input) {
-        //clear mathField
-        if (DICT.hasOwnProperty(input)) {
-            mathField.latex(DICT[input]);
-        } else {
-            mathField.latex('');    //Clears the input
+        mathField.latex('');
+        // Problem, when passing an exponent or fraction, "Right" needs to be pressed before passing the power or denominator
+        let operatorStack = new Stack();
+        for (let i = 0; i < input.length; i++) {
+            let c = input.charAt(i);
+            if (c === " ") {
+                continue;
+            }
+            mathField.typedText(c);
+
+            let result = getType(input, i);
+            switch (result) {
+                case QOP:
+                    //Start a new operator stack
+                    operatorStack.push(new ParenState());
+                    break;
+                case LEFT_PAREN:
+                    if (!operatorStack.isEmpty()) {
+                        let parens = operatorStack.peek();
+                        parens.inc();
+                    }
+                    break;
+                case RIGHT_PAREN:
+                    if (!operatorStack.isEmpty()) {
+                        let parens = operatorStack.peek();
+
+                        parens.dec();
+                        if (parens.isClear()) {
+                            //Press right
+                            mathField.keystroke("Right");
+                            operatorStack.pop();
+                        }
+                    }
+                    break;
+                case OOP:
+                    if (!operatorStack.isEmpty()) {
+                        let parens = operatorStack.peek();
+                        if (parens.isClear()) {
+                            //Press right
+                            console.log("Right");
+                            mathField.keystroke("Right");
+                            operatorStack.pop();
+                        }
+                    }
+                    break;
+            }
         }
-        //focus mathfield
         mathField.focus();
     }
+
+
+    /**
+     * Checks if a character is a number, parenthesis, or neither
+     * @param c     char to check
+     * @return {number}
+     *      1 is leftParen  === (
+     *      2 is rightParen === )
+     *      3 is alphaNum   === [a-zA-Z0-9]
+     *      4 is quandaryOp === / or ^          <-- Quandary Operator is one that moves the cursor position up or down
+     *
+     *      0 is otherOp    === +,-,* etc
+     */
+    const LEFT_PAREN = 1, RIGHT_PAREN = 2, ALPHANUM = 3, QOP = 4, OOP = 5;
+
+    function getType(string, index) {
+        let c = string.charAt(index);
+        if (c === '(')
+            return LEFT_PAREN;
+        if (c === ')')
+            return RIGHT_PAREN;
+
+
+        let last4 = string.substring(index - 3 ,index + 1);
+        if (last4.endsWith("sqrt") || last4.endsWith("cos") || last4.endsWith("sin") || last4.endsWith("tan")) {
+            return QOP;
+        }
+
+        if (c >= '0' && c <= '9')
+            return ALPHANUM;
+        // noinspection EqualityComparisonWithCoercionJS
+        if (c.toLowerCase() != c.toUpperCase())
+            return ALPHANUM;
+        if (c === '/' || c === '^')
+            return QOP;
+        return OOP;
+    }
+
+    /**
+     * Reformat a string outputted by MathQuill.text()
+     *  to be more natural/correct
+     * @param string
+     */
+    function reformat(string) {
+        string = removeParens(string);      //remove extraneous parenthesis
+        string = fixTrig(string);           //fix weird trig output
+        return string;
+    }
+
+    // Not my code, from reddit
+    function removeParens(string) {
+        const open = [];
+        const prevMatch = {
+            open: '',
+            close: ''
+        };
+        const updatedString = string.split('');
+        let openBracket;
+
+        for (let i = 0; i < string.length; i++) {
+            const char = string.charAt(i);
+            if (char === '(') {
+                open.push(i);
+            } else if (char === ')') {
+                openBracket = open.pop();
+                if (openBracket === prevMatch.open - 1 && prevMatch.close === i - 1) {
+                    updatedString[openBracket] = '';
+                    updatedString[i] = '';
+                } else if (openBracket + 1 === i) {
+                    updatedString[openBracket] = '';
+                    updatedString[i] = '';
+                }
+                prevMatch.open = openBracket;
+                prevMatch.close = i;
+            }
+        }
+        return updatedString.filter(Boolean).join('');
+    }
+
+    function fixTrig(string) {
+        return string.replace("\\s*i*n *", "sin").replace("\\c*o*s *", "cos").replace("\\t*a*n *", "tan");
+    }
 });
+
+
+//Stack implementation w/ closure
+function Stack() {
+    let array = [];
+    function push(... args) {
+        return array.push(... args);
+    }
+    function pop() {
+        return array.pop();
+    }
+    function peek() {
+        return array[array.length - 1];
+    }
+    function isEmpty() {
+        return array.length === 0;
+    }
+    return {
+        push: push,
+        pop: pop,
+        peek: peek,
+        isEmpty: isEmpty,
+    }
+}
+
+//State of parenthesis
+function ParenState() {
+    let depth = 0;
+    function inc() {
+        depth++;
+    }
+    function dec() {
+        depth--;
+    }
+    function isClear() {
+        return depth === 0;
+    }
+    return {
+        inc: inc,
+        dec: dec,
+        isClear: isClear,
+    }
+}
