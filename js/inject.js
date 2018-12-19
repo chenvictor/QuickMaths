@@ -61,7 +61,7 @@ if (document.getElementById(RANDOM_ID) == null) {
 
     const UI_MODAL = 0;
     const UI_BAR = 1;
-    const FRAME_TYPE = UI_BAR;
+    const FRAME_TYPE = UI_MODAL;
 
 
     let GLOBAL_INPUT;
