@@ -19,12 +19,25 @@ function QAddition() {
         }
         this.signs.push(sign);
         this.parts.push(qe);
-    }
+    };
+    this.insert = function(qe, sign) {
+        if (sign === undefined) {
+            sign = true;
+        }
+        this.signs.unshift(sign);
+        this.parts.unshift(qe);
+    };
 }
 
 function QProduct(_parts) {
     this.type = 3;
     this.parts = _parts || [];
+    this.times = function(qe) {
+        this.parts.push(qe);
+    }
+    this.insert = function(qe) {
+        this.parts.unshift(qe);
+    }
 }
 
 function QQuotient(_num, _den) {
@@ -82,53 +95,65 @@ const BasicFormatter = new function() {
 
 const BasicParser = new function() {
 
+    const OPERATORS = ["+", "-", "*", "/", "^"];
     const CONST_ARRAY = ["theta", "pi", "e"];
     const CONST_DELIM = `#`;
     const FUNC_ARRAY = ["sqrt", "sin", "cos", "tan"];
-    const FUNC_DELIM = `$`;
-    const UNARY_MINUS = `$-$`;
-    const UNARY_PLUS = `$+$`;
+    const UNARY_DELIM = `$`;
+    const UNARY_MINUS = UNARY_DELIM + '-' + UNARY_DELIM;
+    const UNARY_PLUS =  UNARY_DELIM + '+' + UNARY_DELIM;
 
     /**
      * Parses basic math into a quick element
      * @param string
      */
     function parse(string) {
-        let res = preparse(string);
+        let escaped = escape(string);
+        console.log("Escaped:\t%o", escaped);
 
-        return res;
+        let tokens = tokenize(escaped);
+        console.log("Tokens:\t%o", tokens);
+
+        let shunted = shuntingYard(tokens);
+        console.log("Reverse Polish:\t%o", shunted);
+
+        let object = objectify(shunted);
+
+        return object;
     }
 
     /**
      * Pre-parse a string
      */
-    function preparse(string) {
+    function escape(string) {
         // Create a copy of the string
         let result = string.substring();
+
+        console.log("%o", result);
 
         // Wrap constants
         for (let i = 0; i < CONST_ARRAY.length; i++) {
             let constant = CONST_ARRAY[i];
             let filler = CONST_DELIM + i + CONST_DELIM;
-            result = result.replaceAll(constant, filler);
+            result = replaceAll(result, constant, filler);
         }
         //Wrap functions
         for (let i = 0; i < FUNC_ARRAY.length; i++) {
             let constant = FUNC_ARRAY[i];
-            let filler = FUNC_DELIM + i + FUNC_DELIM;
-            result = result.replaceAll(constant, filler);
+            let filler = UNARY_DELIM + i + UNARY_DELIM;
+            result = replaceAll(result, constant, filler);
         }
         // Unwrap functions
         for (let i = 0; i < CONST_ARRAY.length; i++) {
-            let filler = FUNC_DELIM + i + FUNC_DELIM;
-            let literal = FUNC_DELIM + FUNC_ARRAY[i] + FUNC_DELIM;
-            result = result.replaceAll(filler, literal);
+            let filler = UNARY_DELIM + i + UNARY_DELIM;
+            let literal = UNARY_DELIM + FUNC_ARRAY[i] + UNARY_DELIM;
+            result = replaceAll(result, filler, literal);
         }
         // Unwrap constants
         for (let i = 0; i < CONST_ARRAY.length; i++) {
             let filler = CONST_DELIM + i + CONST_DELIM;
             let literal = CONST_DELIM + CONST_ARRAY[i] + CONST_DELIM;
-            result = result.replaceAll(filler, literal);
+            result = replaceAll(result, filler, literal);
         }
 
         //Get unary (-) and (+) operators
@@ -137,76 +162,202 @@ const BasicParser = new function() {
         } else if (result.charAt(0) === '+') {
             result = UNARY_PLUS + result.substring(1);
         }
-        result = result.replaceAll("--", "-"+UNARY_MINUS);
-        result = result.replaceAll("+-", "-"+UNARY_MINUS);
-        result = result.replaceAll("(-", "("+UNARY_MINUS);
-        result = result.replaceAll("++", "+"+UNARY_PLUS);
-        result = result.replaceAll("+-", "+"+UNARY_PLUS);
-        result = result.replaceAll("(+", "("+UNARY_PLUS);
 
-        //Tokenize
-        let array = [];
-        let delimited = false;
-        let builder = new StringBuilder();
-        for (let i = 0; i < result.length; i++) {
-            let c = result.charAt(i);
-            switch (c) {
-                case CONST_DELIM: case FUNC_DELIM:
-
-            }
+        result = replaceAll(result, "(-", "("+UNARY_MINUS);
+        result = replaceAll(result, "(+", "("+UNARY_PLUS);
+        for (let op of OPERATORS) {
+            result = replaceAll(result, op+"-", op+UNARY_MINUS);
+            result = replaceAll(result, op+"+", op+UNARY_PLUS);
         }
-
-        return array;
+        return result;
     }
 
-    function shuntingYard(string) {
+    function tokenize(string) {
 
-        const TYPE = {
-            NUMBER: 0,
-            OPERATOR: 1,
-        };
-
-        let output = new Queue();
-        output.push(new StringBuilder());
-
-        for (let i = 0; i < string.length; i++) {
-            let c = string.charAt(i);
-            let type = getType(c);
-            switch (type) {
-
+        function charType(char) {
+            const SINGLES = new Set(OPERATORS);
+            SINGLES.add("(");
+            SINGLES.add(")");
+            const ESCAPES = new Set([UNARY_DELIM]);
+            if (SINGLES.has(char)) {
+                return 1;
             }
+            if (ESCAPES.has(char)) {
+                return -1;
+            }
+            return 0;
         }
 
-        function precedence(op) {
+        let builder = new ArrayBuilder();
+        let escaped = false;
+        for (let i = 0; i < string.length; i++) {
+            let char = string.charAt(i);
+            let type = charType(char);
+            if (!escaped || type === -1) {
+                switch (type) {
+                    case 0:
+                        builder.add(char);
+                        break;
+                    case 1:
+                        builder.append(char);
+                        break;
+                    case -1:
+                        if (escaped) {
+                            builder.add(char);
+                            builder.next();
+                        } else {
+                            builder.next();
+                            builder.add(char);
+                        }
+                        escaped = !escaped;
+                        break;
+                    default:
+                        throw new Error("Unrecognized character: %s", char);
+                }
+            } else {
+                builder.add(char);
+            }
+        }
+        return builder.finish();
+    }
+
+    const TYPE = {
+        LEFT_PAREN: -1,
+        RIGHT_PAREN: -2,
+        OPERAND: -3,
+    };
+
+    function precedence(op) {
+        if (op.length === 1) {
             switch (op) {
                 case '-': case '+': return 1;
                 case '*': case '/': return 2;
                 case '^':           return 3;
-                default: return 0;
             }
         }
-
-        function getType(char) {
-            if (char.matches(`[.|0-9]`)) {
-                return TYPE.NUMBER;
-            }
-            return TYPE.OPERATOR;
+        if (op.charAt(0) === UNARY_DELIM) {
+            return 3;
         }
+        return TYPE.OPERAND;
     }
 
+    function getType(token) {
+        if (token === "(") {
+            return TYPE.LEFT_PAREN;
+        }
+        if (token === ")") {
+            return TYPE.RIGHT_PAREN;
+        }
+        return precedence(token);
+    }
 
+    function shuntingYard(array) {
 
-    function isOperator(char) {
-        if ("0" <= char && char <= "9") {
-            return false;   //number
+        let operators = new Stack();
+        let output = [];
+
+        for (let i = 0; i < array.length; i++) {
+            let token = array[i];
+            let type = getType(token);
+            if (type === TYPE.OPERAND) {
+                //number
+                output.push(token);
+            } else if (type === TYPE.LEFT_PAREN) {
+                operators.push(token);
+            } else if (type === TYPE.RIGHT_PAREN) {
+                let operator = operators.pop();
+                while (operator !== "(") {
+                    output.push(operator);
+                    operator = operators.pop();
+                }
+            } else {
+                //Operator
+                let op = operators.peek();
+                while (!operators.isEmpty() && precedence(op) > precedence(token)) {
+                    output.push(operators.pop());
+                    op = operators.peek();
+                }
+                operators.push(token);
+            }
         }
-        if (char === ".") {
-            return false;   //.
+        while (!operators.isEmpty()) {
+            output.push(operators.pop());
         }
-        if (char.toUpperCase() != char.toLowerCase()) {
-            return false;   //letter
+        return output;
+    }
+
+    function objectify(array) {
+
+        function isUnary(token) {
+            return token.charAt(0) === UNARY_DELIM;
         }
-        return true;
+
+        let operands = new Stack();
+        for (let i = 0; i < array.length; i++) {
+            let token = array[i];
+            let type = getType(token);
+            if (type === TYPE.OPERAND) {
+                operands.push(new QElement(token));
+            } else {
+                if (isUnary(token)) {
+                    let op = operands.pop();
+                    if (token === UNARY_PLUS) {
+                        operands.push(op);
+                    } else if (token === UNARY_MINUS) {
+                        operands.push(new QNegated(op));
+                    } else {
+                        operands.push(new QFunction(op));
+                    }
+                } else {
+                    let op2 = operands.pop();
+                    let op1 = operands.pop();
+                    switch (token) {
+                        case "+":
+                            if (op2 instanceof QAddition) {
+                                op2.insert(op1);
+                                operands.push(op2);
+                            } else {
+                                let add = new QAddition();
+                                add.add(op1);
+                                add.add(op2);
+                                operands.push(add);
+                            }
+                            break;
+                        case "-":
+                            if (op2 instanceof QAddition) {
+                                op2.insert(op1, false);
+                                operands.push(op2);
+                            } else {
+                                let add = new QAddition();
+                                add.add(op1);
+                                add.add(op2, false);
+                                operands.push(add);
+                            }
+                            break;
+                        case "*":
+                            if (op2 instanceof QProduct) {
+                                op2.times(op1);
+                                operands.push(op2);
+                            } else {
+                                operands.push(new QProduct([op1, op2]));
+                            }
+                            break;
+                        case "/":
+                            operands.push(new QQuotient(op1, op2));
+                            break;
+                        case "^":
+                            operands.push(new QElement(op1, op2));
+                            break;
+                    }
+                }
+            }
+        }
+
+        return operands.pop();
+    }
+
+    function replaceAll(string, from, to) {
+        return string.split(from).join(to);
     }
 
     return {
@@ -278,16 +429,61 @@ function StringBuilder() {
         return chars.join("");
     }
 
+    function clear() {
+        chars = [];
+    }
+
     return {
         append: append,
         build: build,
-        isEmpty: () => {return chars.length === 0}
+        isEmpty: () => {return chars.length === 0},
+        clear: clear,
     }
 }
 
 function ArrayBuilder() {
     let array = [];
-    
+    let current = new StringBuilder();
+
+    /**
+     * Adds a character to the current stringbuilder
+     * @param char
+     */
+    function add (char) {
+        current.append(char);
+    }
+
+    /**
+     * Inserts the result of the current stringbuilder to the array,
+     *  and clears it
+     */
+    function next () {
+        if (!current.isEmpty()) {
+            array.push(current.build());
+            current.clear();
+        }
+    }
+
+    /**
+     * Inserts a character into the array
+     */
+    function append (str) {
+        next(); // add anything current first
+        array.push(str);
+    }
+
+
+    function finish () {
+        next();
+        return array;
+    }
+
+    return {
+        add: add,
+        next: next,
+        append: append,
+        finish: finish,
+    }
 }
 
 function ParenState() {
@@ -308,9 +504,6 @@ function ParenState() {
     }
 }
 
-
-
-
 //Test values
 let _devElement1 = new QElement("69");    //basic number
 let _devElement2 = new QElement("c");     //variable name
@@ -327,7 +520,9 @@ let _devExponent = new QExponent(_devElement2, _devAddition);
 
 function _devTest(input) {
     console.log("Input:\t\t%s", input);
-    console.log("Parsed:\t\t%o", BasicParser.parse(input));
+    let parsed = BasicParser.parse(input);
+    console.log("Parsed:\t\t%o", parsed);
+    console.log("Formatted:\t\t%o", BasicFormatter.format(parsed));
 }
 function _devRun() {
     _devTest("1+(2/3)");
