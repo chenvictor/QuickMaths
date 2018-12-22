@@ -491,17 +491,22 @@ const QuickMath = new function() {
                 let char = temp.charAt(i);
                 if (char === "{") {
                     if (parens.isClear()) {
-                        temp = stringReplace(temp, i, "(");
+                        if (count === 0) {
+                            temp = stringReplace(temp, i, "((");
+                        } else {
+                            //count must be 1
+                            temp = stringReplace(temp, i, "(");
+                        }
                     }
                     parens.inc();
                 } else if (char === "}") {
                     parens.dec();
                     if (parens.isClear()) {
-                        temp = stringReplace(temp, i, ")");
                         count++;
                         if (count === 1) {
-                            temp = stringInsert(temp, i+1, "/");
+                            temp = stringReplace(temp, i, ")/");
                         } else if (count === 2) {
+                            temp = stringReplace(temp, i, "))");
                             break;
                         }
                     }

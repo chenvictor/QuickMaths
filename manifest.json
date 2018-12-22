@@ -1,5 +1,5 @@
 {
-  "name": "WebWork+",
+  "name": "WeBWorK+",
   "description": "Add math inputs to WebWork",
   "version": "0.0.0.1",
   "permissions": [
@@ -23,7 +23,7 @@
   ],
   "options_page": "options/index.html",
   "browser_action": {
-    "default_title": "WebWork+"
+    "default_title": "WeBWorK+"
   },
   "icons": {
     "16":   "icon-16.png",
