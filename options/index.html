@@ -2,28 +2,45 @@
 <html>
 <head>
     <title>Quick Math Options</title>
+    <link rel="stylesheet" href="../ui/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../ui/css/mathquill.min.css">
     <link rel="stylesheet" href="./options.css">
 
 </head>
 <body>
 <div id="banner">Rem best girl :^)</div>
-<div id="content">
-
+<div class="card mt-4" id="content">
     <form id="interfaceForm">
-        <h2>Interface</h2>
-        <h4>UI Type:</h4>
-        <label>
-            <input type="radio" name="interface" value="0">
-        </label>Modal<br>
-        <label>
-            <input type="radio" name="interface" value="1">
-        </label>Bar<br>
+        <div class="card-header">
+            <h2>Interface</h2>
+        </div>
+        <div class="card-body">
+            <h4>UI Type:</h4>
+            <label>
+                <input type="radio" name="interface" value="0">
+            </label>Modal<br>
+            <label>
+                <input type="radio" name="interface" value="1">
+            </label>Bar<br>
 
-        <button type="submit" style="margin-top: 2em;">Save</button>
+            <div class="row ml-0 align-items-center">
+                <h4>Font Size:</h4>
+                <input name="fontSize" class="ml-2" type="range" step="1" min="15" max="60" style="width: 40%" title="font size" id="fontSizeSelector">
+                <b class="ml-2"><span id="fontValue">28</span>px</b>
+            </div>
+            <p class="col-12" style="font-size: 25px" id="mathPreview">
+                <span id="mathQuill" style="width: 100%;"></span>
+            </p>
+        </div>
+        <div class="card-footer">
+            <button class="btn btn-outline-dark mt-2" type="submit">Save</button>
+        </div>
     </form>
 
 </div>
 
+<script src="../ui/js/jquery-3.3.1.min.js"></script>
+<script src="../ui/js/mathquill.min.js"></script>
 <script src="options.js"></script>
 
 </body>

@@ -1,4 +1,28 @@
 window.addEventListener("load", () => {
+
+    const URLQuery = new function() {
+        let dict = {};
+        let query = window.location.search.substring(1);
+        let vars = query.split("&");
+        for (let i = 0; i < vars.length; i++) {
+            let pair = vars[i].split("=");
+            dict[pair[0]] = pair[1];
+        }
+
+        function get(key, def){
+            if (dict.hasOwnProperty(key)) {
+                return dict[key]
+            }
+            return def;
+        }
+
+        return {
+            get: get
+        }
+    };
+
+    document.getElementById("quillWrapper").style.fontSize = URLQuery.get("fontSize", 30) + "px";
+
     const MQuill = MathQuill.getInterface(2);
     let elem = document.getElementById("mathQuill");
 

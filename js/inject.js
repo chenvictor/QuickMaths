@@ -19,15 +19,18 @@ function encapsulate() {
             chrome.storage.sync.get({
                 //Default ui_type is MODAL
                 ui_type: 0,
+                font_size: 30,
             }, (items) => {
-
-                switch (items.ui_type) {
-                    case "0":
-                        uiFrame = ModalUI();
+                switch (parseInt(items.ui_type)) {  //using parse int because the default value is a string?
+                    case 0:
+                        uiFrame = new ModalUI(items.font_size);
                         break;
-                    case "1":
-                        uiFrame = BarUI();
+                    case 1:
+                        uiFrame = new BarUI(items.font_size);
                         break;
+                    default:
+                        console.warn("UI Type %d invalid. Defaulting to modal.", items.ui_type);
+                        uiFrame = new ModalUI(items.font_size);
                 }
             });
         }
@@ -44,18 +47,18 @@ function encapsulate() {
 
             btn.innerText = "WW+";
             btn.style = `
-            transition: opacity 0.25s ease-in-out;
-            opacity: 0;
-            position: absolute;
-            z-index: 100;
-            padding-top: 4px;
-            padding-bottom: 4px;
-            background-color: skyblue;
-            border: none;
-            border-radius: 6px;
-            top: 0;
-            left: 0;
-        `;
+                transition: opacity 0.25s ease-in-out;
+                opacity: 0;
+                position: absolute;
+                z-index: 100;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                background-color: skyblue;
+                border: none;
+                border-radius: 6px;
+                top: 0;
+                left: 0;
+            `;
             btn.tabIndex = -1;  //don't want the user to tab to here
             btn.addEventListener("click", e => {
                 e.preventDefault();
@@ -93,7 +96,7 @@ function encapsulate() {
             }
         }
 
-        function ModalUI() {
+        function ModalUI(fontSize) {
             let curInput;
 
             const frame = document.createElement("iframe");
@@ -113,7 +116,7 @@ function encapsulate() {
             display: none;
         `;
 
-            frame.src = chrome.extension.getURL("ui/modal.html");
+            frame.src = chrome.extension.getURL("ui/modal.html?fontSize=" + fontSize);
             frame.allowTransparency = true;
             document.body.appendChild(frame);
 
@@ -159,7 +162,7 @@ function encapsulate() {
                 hide: hide
             }
         }
-        function BarUI() {
+        function BarUI(fontSize) {
             const TRANSITION_DURATION = 0.3;
             let curInput;
 
@@ -179,7 +182,7 @@ function encapsulate() {
             background: none;
         `;
 
-            frame.src = chrome.extension.getURL("ui/bar.html");
+            frame.src = chrome.extension.getURL("ui/bar.html?fontSize=" + fontSize);
             frame.allowTransparency = true;
             document.body.appendChild(frame);
 

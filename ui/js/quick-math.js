@@ -79,7 +79,7 @@ const QuickMath = new function() {
      * @param qe    element to format
      */
     function format(qe) {
-        if (qe === null ) {
+        if (qe === null || qe === undefined) {
             return "";
         }
         switch (qe.type) {
@@ -110,7 +110,7 @@ const QuickMath = new function() {
 
                 return qe.name + parenWrap(format(qe.part));
             default:
-                throw new Error("Unknown element type: %o", qe);
+                throw new Error("Unknown element type: " + qe);
         }
     }
 
@@ -119,8 +119,7 @@ const QuickMath = new function() {
      * @param qe    element to format
      */
     function formatLatex(qe) {
-
-        if (qe === null) {
+        if (qe === null || qe === undefined) {
             return "";
         }
 
