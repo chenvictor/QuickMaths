@@ -1,7 +1,7 @@
 {
-  "name": "Quick Math",
-  "description": "Add math inputs to the current web page",
-  "version": "0.0.2",
+  "name": "WebWork+",
+  "description": "Add math inputs to WebWork",
+  "version": "0.0.0.1",
   "permissions": [
     "storage",
     "activeTab",
@@ -16,12 +16,19 @@
   "web_accessible_resources": [
     "ui/modal.html",
     "ui/bar.html",
-    "js/quick-maths.js",
-    "js/jquery-3.3.1.min.js"
+    "ui/js/jquery-3.3.1.min.js",
+    "ui/js/mathquill.min.js",
+    "ui/js/quick-math.js",
+    "ui/js/main.js"
   ],
   "options_page": "options/index.html",
   "browser_action": {
-    "default_title": "Insert easy math input"
+    "default_title": "WebWork+"
+  },
+  "icons": {
+    "16":   "icon-16.png",
+    "48":   "icon-48.png",
+    "128":  "icon-128.png"
   },
   "manifest_version": 2
 }

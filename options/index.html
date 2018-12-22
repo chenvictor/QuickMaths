@@ -3,37 +3,6 @@
 <head>
     <title>Quick Math Options</title>
     <link rel="stylesheet" href="./options.css">
-    <style>
-
-        #whitelist {
-            background-color: white;
-            list-style: none;
-            padding: 0;
-            border: 1px solid gainsboro;
-            height: 150px;
-            overflow-y: scroll;
-            margin-bottom: 0;
-        }
-
-        #whitelist > li {
-            cursor: pointer;
-        }
-
-        #whitelist > li:nth-child(odd){
-            background-color: whitesmoke;
-        }
-
-        .selected {
-            background-color: #2aabd2 !important;
-        }
-
-        .whitelistButton {
-            font-size: 20px;
-            /*border-radius: 5px;*/
-            background-color: white;
-            cursor: pointer;
-        }
-    </style>
 
 </head>
 <body>
@@ -42,7 +11,7 @@
 
     <form id="interfaceForm">
         <h2>Interface</h2>
-        <h4>How should the ui be displayed?</h4>
+        <h4>UI Type:</h4>
         <label>
             <input type="radio" name="interface" value="0">
         </label>Modal<br>
@@ -50,20 +19,12 @@
             <input type="radio" name="interface" value="1">
         </label>Bar<br>
 
-        <h2>Whitelist</h2>
-        <h4>Which websites should have Quick Math enabled by default?</h4>
-        <div>
-            <ul id="whitelist"></ul>
-            <button class="whitelistButton" type="button" id="addWhitelistButton">&plus;</button>
-            <button class="whitelistButton" type="button" id="removeWhitelistButton">&minus;</button>
-        </div>
-        <button type="submit">Save</button>
+        <button type="submit" style="margin-top: 2em;">Save</button>
     </form>
-
-
 
 </div>
 
 <script src="options.js"></script>
+
 </body>
 </html>
