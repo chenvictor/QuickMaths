@@ -6,9 +6,16 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     if (tab.url != undefined && tab.url != null && changeInfo.status === "complete") {
         try {
             let url = new URL(tab.url);
-            if (url.origin.includes("webwork.elearning")) {
-                chrome.tabs.executeScript(tabId, {file: "js/inject.js"});
-            }
+            chrome.storage.sync.get({
+                whitelist: ["webwork.elearning"]
+            }, function (items) {
+                for (let query of items.whitelist) {
+                    if (url.origin.includes(query)) {
+                        chrome.tabs.executeScript(tabId, {file: "js/inject.js"});
+                        break;
+                    }
+                }
+            });
         } catch (e) {
             console.error("Error: "+ e + " with url: " + tab.url);
         }

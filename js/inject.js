@@ -19,8 +19,8 @@ function encapsulate() {
             chrome.storage.sync.get({
                 //Default ui_type is MODAL
                 ui_type: 0,
-                font_size: 30,
-            }, (items) => {
+                font_size: 30
+            }, function(items) {
                 switch (parseInt(items.ui_type)) {  //using parse int because the default value is a string?
                     case 0:
                         uiFrame = new ModalUI(items.font_size);

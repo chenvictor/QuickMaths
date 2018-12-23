@@ -5,24 +5,51 @@
     <link rel="stylesheet" href="../ui/css/bootstrap.min.css">
     <link rel="stylesheet" href="../ui/css/mathquill.min.css">
     <link rel="stylesheet" href="./options.css">
-
+    <style>
+        #whitelist {
+            background-color: white;
+            list-style: none;
+            padding: 0;
+            border: 1px solid gainsboro;
+            height: 150px;
+            overflow-y: scroll;
+            margin-bottom: 0;
+        }
+        #whitelist > li {
+            cursor: pointer;
+        }
+        #whitelist > li:nth-child(odd){
+            background-color: whitesmoke;
+        }
+        .selected {
+            background-color: #2aabd2 !important;
+        }
+        .whitelistButton {
+            font-size: 20px;
+            /*border-radius: 5px;*/
+            background-color: white;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 <div id="banner">Rem best girl :^)</div>
-<div class="card mt-4" id="content">
-    <form id="interfaceForm">
+<div class="mt-4 mb-4" id="content">
+    <form class="card" id="form">
         <div class="card-header">
-            <h2>Interface</h2>
+            <h2>Settings</h2>
         </div>
         <div class="card-body">
+            <!--ui type-->
             <h4>UI Type:</h4>
             <label>
-                <input type="radio" name="interface" value="0">
+                <input class="mr-2" type="radio" name="interface" value="0">
             </label>Modal<br>
             <label>
-                <input type="radio" name="interface" value="1">
+                <input class="mr-2" type="radio" name="interface" value="1">
             </label>Bar<br>
 
+            <!--font size-->
             <div class="row ml-0 align-items-center">
                 <h4>Font Size:</h4>
                 <input name="fontSize" class="ml-2" type="range" step="1" min="15" max="60" style="width: 40%" title="font size" id="fontSizeSelector">
@@ -31,9 +58,21 @@
             <p class="col-12" style="font-size: 25px" id="mathPreview">
                 <span id="mathQuill" style="width: 100%;"></span>
             </p>
+
+            <!--whitelist-->
+            <h4>Whitelist</h4>
+            <div>
+                <ul id="whitelist"></ul>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-secondary" id="addWhitelistButton">Add</button>
+                    <button type="button" class="btn btn-secondary" id="removeWhitelistButton">Remove</button>
+                </div>
+            </div>
+            <span>urls containing these will enable WeBWorK+ by default.</span>
+
         </div>
         <div class="card-footer">
-            <button class="btn btn-outline-dark mt-2" type="submit">Save</button>
+            <button class="btn btn-outline-dark mt-2 float-right" type="submit">Save</button>
         </div>
     </form>
 

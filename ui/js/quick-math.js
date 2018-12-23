@@ -9,6 +9,7 @@ const QuickMath = new function() {
     function QNegated(_part) {
         this.type = 1;
         this.part = _part;
+        this.needsWrap = true;
     }
 
     function QAddition() {
@@ -144,7 +145,7 @@ const QuickMath = new function() {
                 }
                 return output;
             case 1:
-                return "(-" + (qe.part.type === 0 ? formatLatex(qe.part) : parenWrap(formatLatex(qe.part))) + ")";
+                return "-" + (qe.part.type === 0 ? formatLatex(qe.part) : parenWrap(formatLatex(qe.part))) + "";
             case 2:
                 let temp = [];
                 temp.push(formatLatex(qe.parts[0]));
@@ -323,12 +324,14 @@ const QuickMath = new function() {
                     case '*':
                     case '/':
                         return 2;
-                    case '^':
+                    case UNARY_MINUS: case UNARY_PLUS:
                         return 3;
+                    case '^':
+                        return 4;
                 }
             }
             if (op.charAt(0) === UNARY_DELIM) {
-                return 4;
+                return 5;
             }
             return TYPE.OPERAND;
         }
