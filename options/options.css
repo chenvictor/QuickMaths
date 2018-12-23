@@ -18,3 +18,22 @@
     max-width: 600px;
     width: 100%;
 }
+
+#whitelist {
+    background-color: white;
+    list-style: none;
+    padding: 0;
+    border: 1px solid gainsboro;
+    height: 150px;
+    overflow-y: scroll;
+    margin-bottom: 0;
+}
+#whitelist > li {
+    cursor: pointer;
+}
+#whitelist > li:nth-child(odd){
+    background-color: whitesmoke;
+}
+.selected {
+    background-color: #2aabd2 !important;
+}
