@@ -69,7 +69,9 @@ const QuickMath = new function() {
     const OPERATORS = ["+", "-", "*", "/", "^"];
     const CONST_ARRAY = ["theta", "pi"];
     const CONST_DELIM = `#`;
-    const FUNC_ARRAY = ["sqrt", "sin", "cos", "tan", "sec", "csc", "cot", "log", "ln"];
+    const FUNC_ARRAY = ["sqrt", "sec", "csc", "cot", "log",
+                        "ln", "asin", "acos", "atan",
+                        "sin", "cos", "tan"];
     const UNARY_DELIM = `$`;
     const UNARY_MINUS = UNARY_DELIM + '-' + UNARY_DELIM;
     const UNARY_PLUS = UNARY_DELIM + '+' + UNARY_DELIM;
@@ -131,6 +133,9 @@ const QuickMath = new function() {
             return "{" + string + "}";
         }
 
+        //Special operators that MathQuill requires the use of the \operatorname tag
+        const operatornameSet = new Set(["asin", "acos", "atan"]);
+
         switch (qe.type) {
             case 0:
                 let output = qe.part;
@@ -139,7 +144,7 @@ const QuickMath = new function() {
                 }
                 return output;
             case 1:
-                return "-" + (qe.part.type === 0 ? formatLatex(qe.part) : parenWrap(formatLatex(qe.part)));
+                return "(-" + (qe.part.type === 0 ? formatLatex(qe.part) : parenWrap(formatLatex(qe.part))) + ")";
             case 2:
                 let temp = [];
                 temp.push(formatLatex(qe.parts[0]));
@@ -159,6 +164,8 @@ const QuickMath = new function() {
             case 6:
                 if (qe.name === "sqrt") {
                     return "\\sqrt" + bracketWrap(formatLatex(qe.part));
+                } else if (operatornameSet.has(qe.name)) {
+                    return "\\operatorname{" + qe.name + "}" + parenWrap(formatLatex(qe.part));
                 }
                 return "\\"+qe.name + parenWrap(formatLatex(qe.part));
             default:
@@ -304,7 +311,7 @@ const QuickMath = new function() {
         const TYPE = {
             LEFT_PAREN: -1,
             RIGHT_PAREN: -2,
-            OPERAND: -3,
+            OPERAND: -3
         };
 
         function precedence(op) {
@@ -321,7 +328,7 @@ const QuickMath = new function() {
                 }
             }
             if (op.charAt(0) === UNARY_DELIM) {
-                return 3;
+                return 4;
             }
             return TYPE.OPERAND;
         }
@@ -450,16 +457,16 @@ const QuickMath = new function() {
 
         try {
             let escaped = escape(string);
-            // console.debug("Escaped:\t%o", escaped);
+            console.debug("Escaped:\t%o", escaped);
 
             let product = implicitProduct(escaped);
-            // console.debug("Product:\t%o", product);
+            console.debug("Product:\t%o", product);
 
             let tokens = tokenize(product);
-            // console.debug("Tokens:\t%o", tokens);
+            console.debug("Tokens:\t%o", tokens);
 
             let shunted = shuntingYard(tokens);
-            // console.debug("Reverse Polish:\t%o", shunted);
+            console.debug("Reverse Polish:\t%o", shunted);
 
             return objectify(shunted);
         } catch (e) {
@@ -514,6 +521,16 @@ const QuickMath = new function() {
             if (count < 2) {
                 throw new Error("Mismatched fractions");
             }
+        }
+
+        // replace '\operatorname'
+        while (true) {
+            let operator = temp.indexOf("\\operatorname");
+            if (operator === -1) {
+                break;
+            }
+            temp = temp.substr(0, operator) + temp.substr(operator + 14);   //remove \operatorname{
+            temp = stringReplace(temp, temp.indexOf("}", operator), "");    //remove the next close bracket '}'
         }
 
         // remove \left and \right

@@ -29,11 +29,11 @@ window.addEventListener("load", () => {
     const mathField = MQuill.MathField(elem, {
         spaceBehavesLikeTab: true,
         autoCommands: 'pi theta sqrt',
-        autoOperatorNames: 'sin cos tan',
+        autoOperatorNames: 'sin cos tan sec csc cot asin acos atan log ln',
         handlers: {
             enter: function () {
                 send();
-            },
+            }
         }
     });
 
