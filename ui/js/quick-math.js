@@ -1,5 +1,15 @@
 const QuickMath = new function() {
 
+    function on(format, ...args) {
+        console.log(format, args);
+    }
+
+    function off(format, ...args) {
+        //noop
+    }
+
+    let log = off;
+
     // Object definitions
     function QElement(_part) {
         this.type = 0;
@@ -9,7 +19,7 @@ const QuickMath = new function() {
     function QNegated(_part) {
         this.type = 1;
         this.part = _part;
-        this.needsWrap = true;
+        // this.needsWrap = true;
     }
 
     function QAddition() {
@@ -30,7 +40,7 @@ const QuickMath = new function() {
             this.signs.unshift(sign);
             this.parts.unshift(qe);
         };
-        this.needsWrap = true;
+        // this.needsWrap = true;
     }
 
     function QProduct(_parts) {
@@ -42,7 +52,7 @@ const QuickMath = new function() {
         this.insert = function(qe) {
             this.parts.unshift(qe);
         };
-        this.needsWrap = true;
+        // this.needsWrap = true;
     }
 
     function QQuotient(_num, _den) {
@@ -63,36 +73,54 @@ const QuickMath = new function() {
         this.part = _part;
     }
 
+    function QAbsolute(_part) {
+        this.type = 7;
+        this.part = _part;
+    }
+
     /**
      * Constants used
      */
 
     const OPERATORS = ["+", "-", "*", "/", "^"];
     const CONST_ARRAY = ["theta", "pi"];
-    const CONST_DELIM = `#`;
+    const CONST_DELIM = '#';
     const FUNC_ARRAY = ["sqrt", "sec", "csc", "cot", "log",
                         "ln", "asin", "acos", "atan",
-                        "sin", "cos", "tan"];
-    const UNARY_DELIM = `$`;
+                        "sin", "cos", "tan", "abs"];
+    const UNARY_DELIM = '$';
     const UNARY_MINUS = UNARY_DELIM + '-' + UNARY_DELIM;
     const UNARY_PLUS = UNARY_DELIM + '+' + UNARY_DELIM;
 
     /**
      * Formats a quick element into a simple math string
-     * @param qe    element to format
+     * @param qe            element to format
+     * @param parenLevel    level of paren wrapping required by the parent element
+     *              DEFAULT 0 - not required,               eg. 5 always
+     *                      1 - necessary for order of ops  eg. -5, but -(1+2)
+     *                      2 - required                    eg. sin(5) always
      */
-    function format(qe) {
+    function format(qe, parenLevel) {
         if (qe === null || qe === undefined) {
             return "";
         }
+        if (parenLevel === undefined || parenLevel === null) {
+            parenLevel = 0;
+        }
+        let ret;
         switch (qe.type) {
             case 0:
                 if (qe.part.charAt(0) === CONST_DELIM) {
-                    return qe.part.slice(1, -1);
+                    ret = qe.part.slice(1, -1);
                 }
-                return qe.part;
+                ret = qe.part;
+                if (parenLevel === 1) {
+                    parenLevel = 0; //skip parens
+                }
+                break;
             case 1:
-                return "-" + format(qe.part);
+                ret = "-" + format(qe.part, 1);
+                break;
             case 2:
                 let temp = [];
                 temp.push(format(qe.parts[0]));
@@ -100,52 +128,73 @@ const QuickMath = new function() {
                     temp.push(qe.signs[i] ? "+" : "-");
                     temp.push(format(qe.parts[i]));
                 }
-                return parenWrap(temp.join(""));
+                ret = temp.join("");
+                break;
             case 3:
-                return parenWrap(qe.parts.map((x) => {
-                    return format(x);
-                }).join("*"));
+                ret = qe.parts.map(function(x) {return format(x, 1)}).join("*");
+                break;
             case 4:
-                return parenWrap(format(qe.numerator) + "/" + format(qe.denominator));
+                ret = format(qe.numerator, 1) + "/" + format(qe.denominator, 1);
+                break;
             case 5:
-                return parenWrap(format(qe.base) + "^" + format(qe.power));
+                ret = format(qe.base, 1) + "^" + format(qe.power, 1);
+                break;
             case 6:
-
-                return qe.name + parenWrap(format(qe.part));
+                ret = qe.name + format(qe.part, 2);
+                if (ret === 1) {
+                    ret = 0;
+                }
+                break;
+            case 7:
+                ret = "abs" + format(qe.part, 2);
+                if (ret === 1) {
+                    ret = 0;
+                }
+                break;
             default:
                 throw new Error("Unknown element type: " + qe);
         }
+        return parenLevel > 0 ? "(" + ret + ")" : ret;
     }
 
     /**
      * Formats a quick element into a latex string
-     * @param qe    element to format
+     * @param qe            element to format
+     * @param parenLevel    level of paren wrapping required by the parent element
+     *              DEFAULT 0 - not required,               eg. 5 always
+     *                      1 - necessary for order of ops  eg. -5, but -(1+2)
+     *                                                          1+2, but (1+2) / 3
+     *                      2 - required                    eg. \sin(5) always
      */
-    function formatLatex(qe) {
+    function formatLatex(qe, parenLevel) {
         if (qe === null || qe === undefined) {
             return "";
         }
-
-        function parenWrap(string) {
-            return "\\left(" + string + "\\right)";
+        if (parenLevel === undefined || parenLevel === null) {
+            parenLevel = 0;
         }
-
         function bracketWrap(string) {
             return "{" + string + "}";
         }
 
         //Special operators that MathQuill requires the use of the \operatorname tag
-        const operatornameSet = new Set(["asin", "acos", "atan"]);
+        const opSet = new Set(["asin", "acos", "atan"]);
 
+        let ret;
         switch (qe.type) {
             case 0:
                 let output = qe.part;
                 for (let i = 0; i < CONST_ARRAY.length; i++) {
                     output = replaceAll(output, CONST_DELIM + CONST_ARRAY[i] + CONST_DELIM, "\\" + CONST_ARRAY[i]);
                 }
-                return output;
+                ret = output;
+                if (parenLevel === 1) {
+                    parenLevel = 0;
+                }
+                break;
             case 1:
-                return "-" + (qe.part.type === 0 ? formatLatex(qe.part) : parenWrap(formatLatex(qe.part))) + "";
+                ret = "-" + formatLatex(qe.part, 1);
+                break;
             case 2:
                 let temp = [];
                 temp.push(formatLatex(qe.parts[0]));
@@ -155,23 +204,33 @@ const QuickMath = new function() {
                 }
                 return temp.join("");
             case 3:
-                return qe.parts.map((x) => {
-                    return x.needsWrap ? parenWrap(formatLatex(x)) : formatLatex(x);
+                ret = qe.parts.map(function (x) {
+                    return formatLatex(x, 1);
                 }).join("\\cdot ");
+                break;
             case 4:
-                return "\\frac" + bracketWrap(formatLatex(qe.numerator)) + bracketWrap(formatLatex(qe.denominator));
+                ret = "\\frac" + bracketWrap(formatLatex(qe.numerator)) + bracketWrap(formatLatex(qe.denominator));
+                break;
             case 5:
-                return (qe.base.needsWrap ? parenWrap(formatLatex(qe.base)) : formatLatex(qe.base)) + "^" + bracketWrap(formatLatex(qe.power));
+                ret = formatLatex(qe.base, 2) + "^" + bracketWrap(formatLatex(qe.power));
+                break;
             case 6:
                 if (qe.name === "sqrt") {
-                    return "\\sqrt" + bracketWrap(formatLatex(qe.part));
-                } else if (operatornameSet.has(qe.name)) {
-                    return "\\operatorname{" + qe.name + "}" + parenWrap(formatLatex(qe.part));
+                    ret = "\\sqrt" + bracketWrap(formatLatex(qe.part));
+                } else if (opSet.has(qe.name)) {
+                    ret = "\\operatorname{" + qe.name + "}" + formatLatex(qe.part, 2);
+                } else {
+                    ret = "\\" + qe.name + formatLatex(qe.part, 2);
                 }
-                return "\\"+qe.name + parenWrap(formatLatex(qe.part));
+                break;
+            case 7:
+                ret = "\\left|" + formatLatex(qe.part) + "\\right|";
+                break;
             default:
-                throw new Error("Unknown element type: %o", qe);
+                console.error("Unknown element type: %o", qe);
+                throw new Error("");
         }
+        return parenLevel > 0 ? "(" + ret + ")" : ret;
     }
 
     function parse(string) {
@@ -407,6 +466,8 @@ const QuickMath = new function() {
                             operands.push(op);
                         } else if (token === UNARY_MINUS) {
                             operands.push(new QNegated(op));
+                        } else if (token.includes("abs")) {
+                            operands.push(new QAbsolute(op));
                         } else {
                             operands.push(new QFunction(token.slice(1, -1), op));
                         }
@@ -460,16 +521,16 @@ const QuickMath = new function() {
 
         try {
             let escaped = escape(string);
-            console.debug("Escaped:\t%o", escaped);
+            log("Escaped:\t%o", escaped);
 
             let product = implicitProduct(escaped);
-            console.debug("Product:\t%o", product);
+            log("Product:\t%o", product);
 
             let tokens = tokenize(product);
-            console.debug("Tokens:\t%o", tokens);
+            log("Tokens:\t%o", tokens);
 
             let shunted = shuntingYard(tokens);
-            console.debug("Reverse Polish:\t%o", shunted);
+            log("Reverse Polish:\t%o", shunted);
 
             return objectify(shunted);
         } catch (e) {
@@ -483,8 +544,13 @@ const QuickMath = new function() {
     }
 
     function latexToBasic(string) {
+        log("Latex:\t%o", string);
         // cdot => *
         let temp = replaceAll(string, "\\cdot", "*");
+        // |...| => abs(...)
+        temp = replaceAll(temp, "\\left|", "abs(");
+        temp = replaceAll(temp, "\\right|", ")");
+
         // replace fractions
         while (true) {
             let frac = temp.indexOf("\\frac");
@@ -556,10 +622,6 @@ const QuickMath = new function() {
 
     function replaceAll(string, from, to) {
         return string.split(from).join(to);
-    }
-
-    function parenWrap(string) {
-        return "(" + string + ")";
     }
 
     //Helper data structures
@@ -672,8 +734,15 @@ const QuickMath = new function() {
         return {
             inc: inc,
             dec: dec,
-            isClear: isClear,
+            isClear: isClear
         }
+    }
+
+    function dev(enabled) {
+        if (enabled === undefined || enabled === null) {
+            enabled = true;
+        }
+        log = enabled ? on : off;
     }
 
     return {
@@ -682,5 +751,8 @@ const QuickMath = new function() {
         formatLatex: formatLatex,
         parseLatex: parseLatex,
         latexToBasic: latexToBasic,
+        dev: dev
     }
-};
+}
+
+QuickMath.dev(true);
