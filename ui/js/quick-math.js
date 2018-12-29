@@ -375,14 +375,30 @@ const QuickMath = new function() {
             OPERAND: -3
         };
 
+        /**
+         * The associativity of an operator
+         * @param op
+         * @return {number}     -1 for left, 1 for right
+         */
+        function associativity(op) {
+            switch (op) {
+                case '-': case '+':
+                    return -1;
+                case '/': case '*':
+                    return -1;
+                case "^":
+                    return 1;
+                default:
+                    return 1;
+            }
+        }
+
         function precedence(op) {
             if (op.length === 1) {
                 switch (op) {
-                    case '-':
-                    case '+':
+                    case '-': case '+':
                         return 1;
-                    case '*':
-                    case '/':
+                    case '*': case '/':
                         return 2;
                     case UNARY_MINUS: case UNARY_PLUS:
                         return 3;
@@ -431,7 +447,7 @@ const QuickMath = new function() {
                 } else {
                     //Operator
                     let op = operators.peek();
-                    while (!operators.isEmpty() && precedence(op) > precedence(token)) {
+                    while (!operators.isEmpty() && (precedence(op) > precedence(token) || (associativity(op) === -1) && precedence(op) === precedence(token))) {
                         output.push(operators.pop());
                         op = operators.peek();
                     }
