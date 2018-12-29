@@ -1,7 +1,7 @@
 {
   "name": "WeBWorK+",
   "description": "Add math inputs to WebWork",
-  "version": "0.0.0.1",
+  "version": "0.0.0.3",
   "permissions": [
     "storage",
     "activeTab",
@@ -9,7 +9,7 @@
     "https://*/"
   ],
   "background": {
-    "scripts": ["background.js"],
+    "scripts": ["js/background.js"],
     "persistent": false
   },
   "web_accessible_resources": [

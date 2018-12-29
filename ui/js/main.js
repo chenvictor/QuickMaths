@@ -1,5 +1,4 @@
-window.addEventListener("load", () => {
-
+window.addEventListener("load", function() {
     const URLQuery = new function() {
         let dict = {};
         let query = window.location.search.substring(1);
@@ -38,11 +37,11 @@ window.addEventListener("load", () => {
     });
 
     const wrapper = document.getElementById("wrapper");
-    wrapper.addEventListener("click", escape);
+    wrapper.addEventListener("mousedown", escape);
     document.getElementById("okBtn").addEventListener("click", send);
     document.getElementById("closeBtn").addEventListener("click", escape);
     const content = document.getElementById("content");
-    content.addEventListener("click", function (e) {
+    content.addEventListener("mousedown", function (e) {
         // Absorb clicks to the backdrop
         e.stopPropagation();
     });
@@ -62,7 +61,7 @@ window.addEventListener("load", () => {
     function send() {
         top.postMessage({
             type: 1,
-            input: QuickMath.latexToBasic(mathField.latex()),
+            input: QuickMath.format(QuickMath.parse(QuickMath.latexToBasic(mathField.latex()))),
         }, "*");
     }
 

@@ -224,6 +224,7 @@ const QuickMath = new function() {
                 }
                 break;
             case 7:
+                parenLevel = 0; //abs work as parens
                 ret = "\\left|" + formatLatex(qe.part) + "\\right|";
                 break;
             default:
