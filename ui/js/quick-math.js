@@ -19,7 +19,6 @@ const QuickMath = new function() {
     function QNegated(_part) {
         this.type = 1;
         this.part = _part;
-        // this.needsWrap = true;
     }
 
     function QAddition() {
@@ -37,13 +36,15 @@ const QuickMath = new function() {
             if (sign === undefined) {
                 sign = true;
             }
-            this.signs.unshift(sign);
-            this.parts.unshift(qe);
+            this.signs.push(sign);
+            this.parts.push(qe);
         };
-        // this.needsWrap = true;
     }
 
-    function QProduct(_parts) {
+    function QProduct(_parts, _explicit) {
+        if (_explicit === undefined || _explicit === null) {
+            _explicit = true;
+        }
         this.type = 3;
         this.parts = _parts || [];
         this.times = function(qe) {
@@ -52,7 +53,7 @@ const QuickMath = new function() {
         this.insert = function(qe) {
             this.parts.push(qe);
         };
-        // this.needsWrap = true;
+        this.explicit = _explicit;  //explicit product will show a multiplication sign
     }
 
     function QQuotient(_num, _den) {
@@ -137,7 +138,7 @@ const QuickMath = new function() {
                 ret = format(qe.numerator, 1) + "/" + format(qe.denominator, 1);
                 break;
             case 5:
-                ret = format(qe.base, 2) + "^" + format(qe.power, 1);
+                ret = format(qe.base, 1) + "^" + format(qe.power, 1);
                 break;
             case 6:
                 ret = qe.name + format(qe.part, 2);
@@ -213,7 +214,7 @@ const QuickMath = new function() {
                 ret = "\\frac" + bracketWrap(formatLatex(qe.numerator)) + bracketWrap(formatLatex(qe.denominator));
                 break;
             case 5:
-                ret = formatLatex(qe.base, 2) + "^" + bracketWrap(formatLatex(qe.power));
+                ret = formatLatex(qe.base, 1) + "^" + bracketWrap(formatLatex(qe.power));
                 break;
             case 6:
                 if (qe.name === "sqrt") {
@@ -402,7 +403,7 @@ const QuickMath = new function() {
                     case '*': case '/':
                         return 2;
                     case UNARY_MINUS: case UNARY_PLUS:
-                        return 3;
+                        return 5;   //-5^2 evaluates correctly
                     case '^':
                         return 4;
                 }
@@ -494,9 +495,9 @@ const QuickMath = new function() {
                         let op1 = operands.pop();
                         switch (token) {
                             case "+":
-                                if (op2 instanceof QAddition) {
-                                    op2.insert(op1);
-                                    operands.push(op2);
+                                if (op1 instanceof QAddition) {
+                                    op1.insert(op2);
+                                    operands.push(op1);
                                 } else {
                                     let add = new QAddition();
                                     add.add(op1);
