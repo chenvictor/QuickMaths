@@ -50,7 +50,7 @@ const QuickMath = new function() {
             this.parts.push(qe);
         };
         this.insert = function(qe) {
-            this.parts.unshift(qe);
+            this.parts.push(qe);
         };
         // this.needsWrap = true;
     }
@@ -137,7 +137,7 @@ const QuickMath = new function() {
                 ret = format(qe.numerator, 1) + "/" + format(qe.denominator, 1);
                 break;
             case 5:
-                ret = format(qe.base, 1) + "^" + format(qe.power, 1);
+                ret = format(qe.base, 2) + "^" + format(qe.power, 1);
                 break;
             case 6:
                 ret = qe.name + format(qe.part, 2);
@@ -202,7 +202,8 @@ const QuickMath = new function() {
                     temp.push(qe.signs[i] ? "+" : "-");
                     temp.push(formatLatex(qe.parts[i]));
                 }
-                return temp.join("");
+                ret = temp.join("");
+                break;
             case 3:
                 ret = qe.parts.map(function (x) {
                     return formatLatex(x, 1);
@@ -231,7 +232,7 @@ const QuickMath = new function() {
                 console.error("Unknown element type: %o", qe);
                 throw new Error("");
         }
-        return parenLevel > 0 ? "(" + ret + ")" : ret;
+        return parenLevel > 0 ? "\\left(" + ret + "\\right)" : ret;
     }
 
     function parse(string) {
@@ -515,9 +516,9 @@ const QuickMath = new function() {
                                 }
                                 break;
                             case "*":
-                                if (op2 instanceof QProduct) {
-                                    op2.insert(op1);
-                                    operands.push(op2);
+                                if (op1 instanceof QProduct) {
+                                    op1.insert(op2);
+                                    operands.push(op1);
                                 } else {
                                     operands.push(new QProduct([op1, op2]));
                                 }
@@ -549,7 +550,11 @@ const QuickMath = new function() {
             let shunted = shuntingYard(tokens);
             log("Reverse Polish:\t%o", shunted);
 
-            return objectify(shunted);
+            let obj = objectify(shunted);
+            log("Object:\t%o", obj);
+
+
+            return obj;
         } catch (e) {
             console.error(e);
             return null;
@@ -770,6 +775,5 @@ const QuickMath = new function() {
         latexToBasic: latexToBasic,
         dev: dev
     }
-}
-
+};
 QuickMath.dev(true);

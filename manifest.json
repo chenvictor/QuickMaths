@@ -1,7 +1,7 @@
 {
   "name": "WeBWorK+",
   "description": "Add math inputs to WebWork",
-  "version": "0.0.0.5",
+  "version": "0.0.0.7",
   "permissions": [
     "storage",
     "activeTab",
@@ -9,7 +9,7 @@
     "https://*/"
   ],
   "background": {
-    "scripts": ["js/background.js"],
+    "scripts": ["js/background.min.js"],
     "persistent": false
   },
   "web_accessible_resources": [
@@ -17,8 +17,8 @@
     "ui/bar.html",
     "ui/js/jquery-3.3.1.min.js",
     "ui/js/mathquill.min.js",
-    "ui/js/quick-math.js",
-    "ui/js/main.js"
+    "ui/js/quick-math.min.js",
+    "ui/js/main.min.js"
   ],
   "options_page": "options/index.html",
   "browser_action": {
