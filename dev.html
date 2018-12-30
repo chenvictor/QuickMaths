@@ -1,10 +1,29 @@
 <html>
 <head>
     <title>Dev</title>
+    <style>
+        input {
+            font-size: 25px;
+            margin-bottom: 10px;
+            display: block;
+        }
+    </style>
 </head>
 <body>
 
-<input style="font-size: 50px;" type="text">
+<div id="container">
+</div>
 
+<script>
+    //Add tests
+    const tests = ["-x^2+x^2", "atan(theta)", "2a"];
+    const div = document.getElementById("container");
+    for (let t of tests) {
+        let elem = document.createElement("input");
+        elem.type = "text";
+        elem.value = t;
+        div.appendChild(elem);
+    }
+</script>
 </body>
 </html>

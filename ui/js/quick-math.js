@@ -82,7 +82,6 @@ const QuickMath = new function() {
     /**
      * Constants used
      */
-
     const OPERATORS = ["+", "-", "*", "/", "^"];
     const CONST_ARRAY = ["theta", "pi"];
     const CONST_DELIM = '#';
