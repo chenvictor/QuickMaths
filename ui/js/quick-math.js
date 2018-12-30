@@ -112,8 +112,9 @@ const QuickMath = new function() {
             case 0:
                 if (qe.part.charAt(0) === CONST_DELIM) {
                     ret = qe.part.slice(1, -1);
+                } else {
+                    ret = qe.part;
                 }
-                ret = qe.part;
                 if (parenLevel === 1) {
                     parenLevel = 0; //skip parens
                 }
@@ -183,11 +184,10 @@ const QuickMath = new function() {
         let ret;
         switch (qe.type) {
             case 0:
-                let output = qe.part;
+                ret = qe.part;
                 for (let i = 0; i < CONST_ARRAY.length; i++) {
-                    output = replaceAll(output, CONST_DELIM + CONST_ARRAY[i] + CONST_DELIM, "\\" + CONST_ARRAY[i]);
+                    ret = replaceAll(ret, CONST_DELIM + CONST_ARRAY[i] + CONST_DELIM, "\\" + CONST_ARRAY[i]);
                 }
-                ret = output;
                 if (parenLevel === 1) {
                     parenLevel = 0;
                 }
@@ -236,6 +236,8 @@ const QuickMath = new function() {
     }
 
     function parse(string) {
+
+        const IMPLICIT_PROD = "@";
 
         if (string === undefined || string === null || string.length === 0) {
             return null;
@@ -293,26 +295,27 @@ const QuickMath = new function() {
             for (let i = string.length - 1; i > 0; i--) {
                 let curr = string.charAt(i);
                 let prev = string.charAt(i-1);
-                if (curr === "(") {
-                    if (prev === CONST_DELIM || (getType(prev) <= 0 && prev !== "(")) {
-                        //Not an operator
-                        string = stringInsert(string, i, "*");
-                    }
-                } else if (prev === ")") {
-                    if (curr === CONST_DELIM || (getType(curr) <= 0 && curr !== ")")) {
-                        //Not an operator
-                        string = stringInsert(string, i, "*");
-                    }
-                } else if (curr === CONST_DELIM && prev === CONST_DELIM) {
-                    string = stringInsert(string, i, "*");
-                } else if (curr === UNARY_DELIM) {
-                    if (evenEscape) {
+
+                if (evenEscape) {
+                    if (curr === UNARY_DELIM)
                         evenEscape = false;
-                    } else {
-                        evenEscape = true;
+                } else {
+                    if (curr === "(") {
                         if (prev === CONST_DELIM || (getType(prev) <= 0 && prev !== "(")) {
                             //Not an operator
-                            string = stringInsert(string, i, "*");
+                            string = stringInsert(string, i, IMPLICIT_PROD);
+                        }
+                    } else if (prev === ")") {
+                        if (curr === CONST_DELIM || (getType(curr) <= 0 && curr !== ")")) {
+                            //Not an operator
+                            string = stringInsert(string, i, IMPLICIT_PROD);
+                        }
+                    } else if (curr === CONST_DELIM && prev === CONST_DELIM) {
+                        string = stringInsert(string, i, IMPLICIT_PROD);
+                    } else if (curr === UNARY_DELIM) {
+                        if (prev === CONST_DELIM || (getType(prev) <= 0 && prev !== "(")) {
+                            //Not an operator
+                            string = stringInsert(string, i, IMPLICIT_PROD);
                         }
                     }
                 }

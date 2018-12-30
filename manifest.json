@@ -9,7 +9,7 @@
     "https://*/"
   ],
   "background": {
-    "scripts": ["js/background.min.js"],
+    "scripts": ["js/background.js"],
     "persistent": false
   },
   "web_accessible_resources": [
@@ -17,8 +17,8 @@
     "ui/bar.html",
     "ui/js/jquery-3.3.1.min.js",
     "ui/js/mathquill.min.js",
-    "ui/js/quick-math.min.js",
-    "ui/js/main.min.js"
+    "ui/js/quick-math.js",
+    "ui/js/main.js"
   ],
   "options_page": "options/index.html",
   "browser_action": {

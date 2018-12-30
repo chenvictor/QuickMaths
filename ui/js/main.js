@@ -61,6 +61,7 @@ window.addEventListener("load", function() {
     function send() {
         top.postMessage({
             type: 1,
+            // input: QuickMath.latexToBasic(mathField.latex())
             input: QuickMath.format(QuickMath.parse(QuickMath.latexToBasic(mathField.latex()))),
         }, "*");
     }
