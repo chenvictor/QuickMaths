@@ -1,5 +1,5 @@
 chrome.browserAction.onClicked.addListener(function() {
-    chrome.tabs.executeScript(null, {file: "js/inject.min.js"});
+    chrome.tabs.executeScript(null, {file: "js/inject.js"});
 });
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     // noinspection EqualityComparisonWithCoercionJS
@@ -11,7 +11,7 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
             }, function (items) {
                 for (let query of items.whitelist) {
                     if (url.origin.includes(query)) {
-                        chrome.tabs.executeScript(tabId, {file: "js/inject.min.js"});
+                        chrome.tabs.executeScript(tabId, {file: "js/inject.js"});
                         break;
                     }
                 }

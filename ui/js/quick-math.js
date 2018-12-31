@@ -82,16 +82,28 @@ const QuickMath = new function() {
     /**
      * Constants used
      */
+    const OP = {
+        ADD: "+",
+        SUB: "-",
+        E_PROD: "*",
+        DIV: "/",
+        EXP: "^",
+        I_PROD: "@"
+    };
+    const TOKEN = {
+        LEFT_PAREN: "(",
+        RIGHT_PAREN: ")"
+    };
 
-    const OPERATORS = ["+", "-", "*", "/", "^"];
+    const OPERATORS = Object.values(OP);
     const CONST_ARRAY = ["theta", "pi"];
-    const CONST_DELIM = '#';
+    const CONST_DELIM = "#";
     const FUNC_ARRAY = ["sqrt", "sec", "csc", "cot", "log",
-                        "ln", "asin", "acos", "atan",
-                        "sin", "cos", "tan", "abs"];
-    const UNARY_DELIM = '$';
-    const UNARY_MINUS = UNARY_DELIM + '-' + UNARY_DELIM;
-    const UNARY_PLUS = UNARY_DELIM + '+' + UNARY_DELIM;
+                        "ln", "asin", "acos", "atan", "arcsin",
+                        "arccos", "arctan", "sin", "cos", "tan", "abs",];
+    const UNARY_DELIM = "$";
+    const UNARY_MINUS = UNARY_DELIM + OP.SUB + UNARY_DELIM;
+    const UNARY_PLUS = UNARY_DELIM + OP.ADD + UNARY_DELIM;
 
     /**
      * Formats a quick element into a simple math string
@@ -113,49 +125,53 @@ const QuickMath = new function() {
             case 0:
                 if (qe.part.charAt(0) === CONST_DELIM) {
                     ret = qe.part.slice(1, -1);
+                } else {
+                    ret = qe.part;
                 }
-                ret = qe.part;
                 if (parenLevel === 1) {
                     parenLevel = 0; //skip parens
                 }
                 break;
             case 1:
-                ret = "-" + format(qe.part, 1);
+                if (parenLevel === 1) {
+                    parenLevel = 0;
+                }
+                ret = OP.SUB + format(qe.part, 1);
                 break;
             case 2:
                 let temp = [];
                 temp.push(format(qe.parts[0]));
                 for (let i = 1; i < qe.parts.length; i++) {
-                    temp.push(qe.signs[i] ? "+" : "-");
+                    temp.push(qe.signs[i] ? OP.ADD : OP.SUB);
                     temp.push(format(qe.parts[i]));
                 }
                 ret = temp.join("");
                 break;
             case 3:
-                ret = qe.parts.map(function(x) {return format(x, 1)}).join("*");
+                ret = qe.parts.map(function(x) {return format(x, 1)}).join(qe.explicit ? OP.E_PROD : "");
                 break;
             case 4:
-                ret = format(qe.numerator, 1) + "/" + format(qe.denominator, 1);
+                ret = format(qe.numerator, 1) + OP.DIV + format(qe.denominator, 1);
                 break;
             case 5:
-                ret = format(qe.base, 1) + "^" + format(qe.power, 1);
+                ret = format(qe.base, 1) + OP.EXP + format(qe.power, 1);
                 break;
             case 6:
-                ret = qe.name + format(qe.part, 2);
-                if (ret === 1) {
-                    ret = 0;
+                if (parenLevel === 1) {
+                    parenLevel = 0;
                 }
+                ret = qe.name + format(qe.part, 2);
                 break;
             case 7:
                 ret = "abs" + format(qe.part, 2);
-                if (ret === 1) {
-                    ret = 0;
+                if (parenLevel === 1) {
+                    parenLevel = 0;
                 }
                 break;
             default:
                 throw new Error("Unknown element type: " + qe);
         }
-        return parenLevel > 0 ? "(" + ret + ")" : ret;
+        return parenLevel > 0 ? TOKEN.LEFT_PAREN + ret + TOKEN.RIGHT_PAREN : ret;
     }
 
     /**
@@ -166,6 +182,7 @@ const QuickMath = new function() {
      *                      1 - necessary for order of ops  eg. -5, but -(1+2)
      *                                                          1+2, but (1+2) / 3
      *                      2 - required                    eg. \sin(5) always
+     *                      3 - required for inner exponent eg. 5^(5^2), but not (5^(5^2))
      */
     function formatLatex(qe, parenLevel) {
         if (qe === null || qe === undefined) {
@@ -177,6 +194,8 @@ const QuickMath = new function() {
         function bracketWrap(string) {
             return "{" + string + "}";
         }
+        if (qe.type !== 5 && parenLevel === 3)
+            parenLevel = 1;
 
         //Special operators that MathQuill requires the use of the \operatorname tag
         const opSet = new Set(["asin", "acos", "atan"]);
@@ -184,39 +203,51 @@ const QuickMath = new function() {
         let ret;
         switch (qe.type) {
             case 0:
-                let output = qe.part;
+                ret = qe.part;
                 for (let i = 0; i < CONST_ARRAY.length; i++) {
-                    output = replaceAll(output, CONST_DELIM + CONST_ARRAY[i] + CONST_DELIM, "\\" + CONST_ARRAY[i]);
+                    ret = replaceAll(ret, CONST_DELIM + CONST_ARRAY[i] + CONST_DELIM, "\\" + CONST_ARRAY[i]);
                 }
-                ret = output;
                 if (parenLevel === 1) {
                     parenLevel = 0;
                 }
                 break;
             case 1:
-                ret = "-" + formatLatex(qe.part, 1);
+                if (parenLevel === 1) {
+                    parenLevel = 0;
+                }
+                ret = OP.SUB + formatLatex(qe.part, 1);
                 break;
             case 2:
                 let temp = [];
                 temp.push(formatLatex(qe.parts[0]));
                 for (let i = 1; i < qe.parts.length; i++) {
-                    temp.push(qe.signs[i] ? "+" : "-");
+                    temp.push(qe.signs[i] ? OP.ADD : OP.SUB);
                     temp.push(formatLatex(qe.parts[i]));
                 }
                 ret = temp.join("");
                 break;
             case 3:
+                if (parenLevel === 1)
+                    parenLevel = 0;
                 ret = qe.parts.map(function (x) {
                     return formatLatex(x, 1);
-                }).join("\\cdot ");
+                }).join(qe.explicit ? "\\cdot " : "");
                 break;
             case 4:
+                if (parenLevel === 1)
+                    parenLevel = 0;
                 ret = "\\frac" + bracketWrap(formatLatex(qe.numerator)) + bracketWrap(formatLatex(qe.denominator));
                 break;
             case 5:
-                ret = formatLatex(qe.base, 1) + "^" + bracketWrap(formatLatex(qe.power));
+                if (parenLevel === 1) {
+                    parenLevel = 0;
+                }
+                ret = formatLatex(qe.base, 3) + OP.EXP + bracketWrap(formatLatex(qe.power, 3));
                 break;
             case 6:
+                if (parenLevel === 1) {
+                    parenLevel = 0;
+                }
                 if (qe.name === "sqrt") {
                     ret = "\\sqrt" + bracketWrap(formatLatex(qe.part));
                 } else if (opSet.has(qe.name)) {
@@ -274,48 +305,87 @@ const QuickMath = new function() {
             }
 
             //Get unary (-) and (+) operators
-            if (result.charAt(0) === '-') {
+            if (result.charAt(0) === OP.SUB) {
                 result = UNARY_MINUS + result.substring(1);
-            } else if (result.charAt(0) === '+') {
+            } else if (result.charAt(0) === OP.ADD) {
                 result = UNARY_PLUS + result.substring(1);
             }
 
-            result = replaceAll(result, "(-", "(" + UNARY_MINUS);
-            result = replaceAll(result, "(+", "(" + UNARY_PLUS);
+            result = replaceAll(result, TOKEN.LEFT_PAREN + OP.SUB, TOKEN.LEFT_PAREN + UNARY_MINUS);
+            result = replaceAll(result, TOKEN.LEFT_PAREN + OP.ADD, TOKEN.LEFT_PAREN + UNARY_PLUS);
             for (let op of OPERATORS) {
-                result = replaceAll(result, op + "-", op + UNARY_MINUS);
-                result = replaceAll(result, op + "+", op + UNARY_PLUS);
+                result = replaceAll(result, op + OP.SUB, op + UNARY_MINUS);
+                result = replaceAll(result, op + OP.ADD, op + UNARY_PLUS);
             }
             return result;
         }
 
         function implicitProduct(string) {
-            let evenEscape = true;
+
+            function scoreLeft(c) {
+                if (c === TOKEN.RIGHT_PAREN)
+                    return 1;
+                if (c === UNARY_DELIM) {
+                    return -1;
+                }
+                return score(c);
+            }
+            function scoreRight(c) {
+                if (c === TOKEN.LEFT_PAREN)
+                    return 1;
+                if (c === UNARY_DELIM) {
+                    return 1;
+                }
+                return score(c);
+            }
+            function score(c) {
+                if (c === CONST_DELIM)
+                    return 1;
+                if (isLetter(c))
+                    return 1;
+                if (isOperator(c))
+                    return -1;
+                if (c === TOKEN.RIGHT_PAREN || c === TOKEN.LEFT_PAREN)
+                    return -1;
+                return 0;
+            }
+
+            function isLetter(c) {
+                // noinspection EqualityComparisonWithCoercionJS
+                return c.toUpperCase() != c.toLowerCase();
+            }
+
+            function isOperator(c) {
+                return OPERATORS.indexOf(c) !== -1;
+            }
+
+            function ignoreTrigger(c) {
+                return c === UNARY_DELIM || c === CONST_DELIM;
+            }
+
             for (let i = string.length - 1; i > 0; i--) {
-                let curr = string.charAt(i);
-                let prev = string.charAt(i-1);
-                if (curr === "(") {
-                    if (prev === CONST_DELIM || (getType(prev) <= 0 && prev !== "(")) {
-                        //Not an operator
-                        string = stringInsert(string, i, "*");
-                    }
-                } else if (prev === ")") {
-                    if (curr === CONST_DELIM || (getType(curr) <= 0 && curr !== ")")) {
-                        //Not an operator
-                        string = stringInsert(string, i, "*");
-                    }
-                } else if (curr === CONST_DELIM && prev === CONST_DELIM) {
-                    string = stringInsert(string, i, "*");
-                } else if (curr === UNARY_DELIM) {
-                    if (evenEscape) {
-                        evenEscape = false;
-                    } else {
-                        evenEscape = true;
-                        if (prev === CONST_DELIM || (getType(prev) <= 0 && prev !== "(")) {
-                            //Not an operator
-                            string = stringInsert(string, i, "*");
+                let right, left;
+                do {
+                    right = string.charAt(i);
+                    left = string.charAt(i-1);
+                } while (false);
+
+                if (ignoreTrigger(right)) {
+                    i--;
+                    while (!ignoreTrigger(string.charAt(i))) {
+                        //skip chars until ignore is over
+                        i--;
+                        if (i === 0) {
+                            return string;
                         }
+                        if (i < 0)
+                            throw "something broke";
                     }
+                    right = string.charAt(i);
+                    left = string.charAt(i - 1);
+                }
+                if (scoreLeft(left) + scoreRight(right) > 0) {
+                    string = stringInsert(string, i, OP.I_PROD);
                 }
             }
             return string;
@@ -326,8 +396,8 @@ const QuickMath = new function() {
 
             function charType(char) {
                 const SINGLES = new Set(OPERATORS);
-                SINGLES.add("(");
-                SINGLES.add(")");
+                SINGLES.add(TOKEN.LEFT_PAREN);
+                SINGLES.add(TOKEN.RIGHT_PAREN);
                 const ESCAPES = new Set([UNARY_DELIM]);
                 if (SINGLES.has(char)) {
                     return 1;
@@ -384,11 +454,11 @@ const QuickMath = new function() {
          */
         function associativity(op) {
             switch (op) {
-                case '-': case '+':
+                case OP.SUB: case OP.ADD:
                     return -1;
-                case '/': case '*':
+                case OP.DIV: case OP.E_PROD: case OP.I_PROD:
                     return -1;
-                case "^":
+                case OP.EXP:
                     return 1;
                 default:
                     return 1;
@@ -398,27 +468,27 @@ const QuickMath = new function() {
         function precedence(op) {
             if (op.length === 1) {
                 switch (op) {
-                    case '-': case '+':
+                    case OP.SUB: case OP.ADD:
                         return 1;
-                    case '*': case '/':
+                    case OP.E_PROD: case OP.DIV: case OP.I_PROD:
                         return 2;
-                    case UNARY_MINUS: case UNARY_PLUS:
-                        return 5;   //-5^2 evaluates correctly
-                    case '^':
+                    case OP.EXP:
                         return 4;
                 }
             }
             if (op.charAt(0) === UNARY_DELIM) {
+                if (op === UNARY_MINUS || op === UNARY_PLUS)
+                    return 3;   //-5^2 evaluates correctly
                 return 5;
             }
             return TYPE.OPERAND;
         }
 
         function getType(token) {
-            if (token === "(") {
+            if (token === TOKEN.LEFT_PAREN) {
                 return TYPE.LEFT_PAREN;
             }
-            if (token === ")") {
+            if (token === TOKEN.RIGHT_PAREN) {
                 return TYPE.RIGHT_PAREN;
             }
             return precedence(token);
@@ -439,7 +509,7 @@ const QuickMath = new function() {
                     operators.push(token);
                 } else if (type === TYPE.RIGHT_PAREN) {
                     let operator = operators.pop();
-                    while (operator !== "(") {
+                    while (operator !== TOKEN.LEFT_PAREN) {
                         if (operators.isEmpty()) {
                             throw new Error("Mismatched parenthesis");
                         }
@@ -458,7 +528,7 @@ const QuickMath = new function() {
             }
             while (!operators.isEmpty()) {
                 let op = operators.pop();
-                if (op === "(") {
+                if (op === TOKEN.LEFT_PAREN) {
                     throw new Error("Mismatched parenthesis");
                 }
                 output.push(op);
@@ -494,7 +564,7 @@ const QuickMath = new function() {
                         let op2 = operands.pop();
                         let op1 = operands.pop();
                         switch (token) {
-                            case "+":
+                            case OP.ADD:
                                 if (op1 instanceof QAddition) {
                                     op1.insert(op2);
                                     operands.push(op1);
@@ -505,7 +575,7 @@ const QuickMath = new function() {
                                     operands.push(add);
                                 }
                                 break;
-                            case "-":
+                            case OP.SUB:
                                 if (op2 instanceof QAddition) {
                                     op2.insert(op1, false);
                                     operands.push(op2);
@@ -516,18 +586,26 @@ const QuickMath = new function() {
                                     operands.push(add);
                                 }
                                 break;
-                            case "*":
-                                if (op1 instanceof QProduct) {
+                            case OP.E_PROD:
+                                if (op1 instanceof QProduct && op1.explicit === true) {
                                     op1.insert(op2);
                                     operands.push(op1);
                                 } else {
                                     operands.push(new QProduct([op1, op2]));
                                 }
                                 break;
+                            case "@":
+                                if (op1 instanceof QProduct && op1.explicit === false) {
+                                    op1.insert(op2);
+                                    operands.push(op1);
+                                } else {
+                                    operands.push(new QProduct([op1, op2], false));
+                                }
+                                break;
                             case "/":
                                 operands.push(new QQuotient(op1, op2));
                                 break;
-                            case "^":
+                            case OP.EXP:
                                 operands.push(new QExponent(op1, op2));
                                 break;
                         }
@@ -569,10 +647,10 @@ const QuickMath = new function() {
     function latexToBasic(string) {
         log("Latex:\t%o", string);
         // cdot => *
-        let temp = replaceAll(string, "\\cdot", "*");
+        let temp = replaceAll(string, "\\cdot", OP.E_PROD);
         // |...| => abs(...)
-        temp = replaceAll(temp, "\\left|", "abs(");
-        temp = replaceAll(temp, "\\right|", ")");
+        temp = replaceAll(temp, "\\left|", "abs" + TOKEN.LEFT_PAREN);
+        temp = replaceAll(temp, "\\right|", TOKEN.RIGHT_PAREN);
 
         // replace fractions
         while (true) {
@@ -590,10 +668,10 @@ const QuickMath = new function() {
                 if (char === "{") {
                     if (parens.isClear()) {
                         if (count === 0) {
-                            temp = stringReplace(temp, i, "((");
+                            temp = stringReplace(temp, i, TOKEN.LEFT_PAREN + TOKEN.LEFT_PAREN);
                         } else {
                             //count must be 1
-                            temp = stringReplace(temp, i, "(");
+                            temp = stringReplace(temp, i, TOKEN.LEFT_PAREN);
                         }
                     }
                     parens.inc();
@@ -602,9 +680,9 @@ const QuickMath = new function() {
                     if (parens.isClear()) {
                         count++;
                         if (count === 1) {
-                            temp = stringReplace(temp, i, ")/");
+                            temp = stringReplace(temp, i, TOKEN.RIGHT_PAREN + "/");
                         } else if (count === 2) {
-                            temp = stringReplace(temp, i, "))");
+                            temp = stringReplace(temp, i, TOKEN.RIGHT_PAREN + TOKEN.RIGHT_PAREN);
                             break;
                         }
                     }
@@ -615,14 +693,14 @@ const QuickMath = new function() {
             }
         }
 
-        // replace '\operatorname'
+        // replace "\operatorname"
         while (true) {
             let operator = temp.indexOf("\\operatorname");
             if (operator === -1) {
                 break;
             }
             temp = temp.substr(0, operator) + temp.substr(operator + 14);   //remove \operatorname{
-            temp = stringReplace(temp, temp.indexOf("}", operator), "");    //remove the next close bracket '}'
+            temp = stringReplace(temp, temp.indexOf("}", operator), "");    //remove the next close bracket "}"
         }
 
         // remove \left and \right
@@ -631,8 +709,8 @@ const QuickMath = new function() {
         // remove \
         temp = replaceAll(temp, "\\", "");
         // brackets -> parens
-        temp = replaceAll(temp, "{", "(");
-        return replaceAll(temp, "}", ")");
+        temp = replaceAll(temp, "{", TOKEN.LEFT_PAREN);
+        return replaceAll(temp, "}", TOKEN.RIGHT_PAREN);
     }
 
     function stringInsert(string, index, value) {
@@ -777,4 +855,3 @@ const QuickMath = new function() {
         dev: dev
     }
 };
-QuickMath.dev(true);
