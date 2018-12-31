@@ -62,10 +62,11 @@ function encapsulate() {
             btn.tabIndex = -1;  //don't want the user to tab to here
             btn.addEventListener("click", e => {
                 e.preventDefault();
-                if (btn.style.opacity !== 0) {
+                if (btn.dataset.enabled === "true") {
                     performShow();
                 }
             });
+            btn.dataset.enabled = "false";
             input.parentNode.insertBefore(btn, input.nextSibling);
 
             input.addEventListener('focus', () => {
@@ -77,13 +78,17 @@ function encapsulate() {
                     Math.round(margin + rect.top + document.documentElement.scrollTop) + "px)";
                 btn.style.opacity = "1";
                 btn.style.cursor = "pointer";
+                btn.dataset.enabled = "true";
                 globalInput = input;
             });
 
             input.addEventListener('blur', () => {
                 setTimeout(() => {
                     btn.style.opacity = "0";
-                    btn.style.pointer = "default";
+                    btn.style.cursor = "default";
+                    setTimeout(() => {
+                        btn.dataset.enabled = "false";
+                    }, 150);
                 }, 5);
             });
 
@@ -92,7 +97,7 @@ function encapsulate() {
                 input.blur();
                 setTimeout(() => {
                     input.focus();
-                }, 5);
+                }, 50);
             }
         }
 
