@@ -79,6 +79,12 @@ const QuickMath = new function() {
         this.part = _part;
     }
 
+    function QLogarithm(_base, _part) {
+        this.type = 8;
+        this.base = _base;
+        this.part = _part;
+    }
+
     /**
      * Constants used
      */
@@ -92,15 +98,47 @@ const QuickMath = new function() {
     };
     const TOKEN = {
         LEFT_PAREN: "(",
-        RIGHT_PAREN: ")"
+        RIGHT_PAREN: ")",
+        LEFT_SQUARE: "[",
+        RIGHT_SQUARE: "]"
     };
 
     const OPERATORS = Object.values(OP);
     const CONST_ARRAY = ["theta", "pi"];
     const CONST_DELIM = "#";
-    const FUNC_ARRAY = ["sqrt", "sec", "csc", "cot", "log",
-                        "ln", "asin", "acos", "atan", "arcsin",
-                        "arccos", "arctan", "sin", "cos", "tan", "abs",];
+
+    function buildFunctions() {
+        const NUMERIC = ["log", "logten", "sqrt", "abs", "int", "sgn", "ln"];
+        const TRIG = ["sin", "cos", "tan", "sec", "csc", "cot"];
+
+        let fn = [];
+        fn.push(...NUMERIC);
+        //inverse hyperbolic
+        TRIG.forEach((x) => {
+            fn.push("a" + x + "h");
+            fn.push("arc" + x + "h");
+        });
+        //simple hyperbolic
+        TRIG.forEach((x) => {
+            fn.push(x + "h");
+        });
+        //inverse trig
+        // fn.push("atan2");
+        TRIG.forEach((x) => {
+            fn.push("a" + x);
+            fn.push("arc" + x);
+        });
+        //simple trig
+        fn.push(...TRIG);
+        return fn;
+    }
+
+    function functions() {
+        return FUNC_ARRAY.join(" ");
+    }
+
+    const FUNC_ARRAY = buildFunctions();
+
     const UNARY_DELIM = "$";
     const UNARY_MINUS = UNARY_DELIM + OP.SUB + UNARY_DELIM;
     const UNARY_PLUS = UNARY_DELIM + OP.ADD + UNARY_DELIM;
@@ -198,7 +236,7 @@ const QuickMath = new function() {
             parenLevel = 1;
 
         //Special operators that MathQuill requires the use of the \operatorname tag
-        const opSet = new Set(["asin", "acos", "atan"]);
+        const opSet = new Set(["asin", "acos", "atan", "asinh", "acosh", "atanh", "acsch", "asech", "atanh"]);
 
         let ret;
         switch (qe.type) {
@@ -323,7 +361,7 @@ const QuickMath = new function() {
         function implicitProduct(string) {
 
             function scoreLeft(c) {
-                if (c === TOKEN.RIGHT_PAREN)
+                if (c === TOKEN.RIGHT_PAREN || c === TOKEN.RIGHT_SQUARE)
                     return 1;
                 if (c === UNARY_DELIM) {
                     return -1;
@@ -331,7 +369,7 @@ const QuickMath = new function() {
                 return score(c);
             }
             function scoreRight(c) {
-                if (c === TOKEN.LEFT_PAREN)
+                if (c === TOKEN.LEFT_PAREN || c === TOKEN.LEFT_SQUARE)
                     return 1;
                 if (c === UNARY_DELIM) {
                     return 1;
@@ -345,7 +383,7 @@ const QuickMath = new function() {
                     return 1;
                 if (isOperator(c))
                     return -1;
-                if (c === TOKEN.RIGHT_PAREN || c === TOKEN.LEFT_PAREN)
+                if (c === TOKEN.RIGHT_PAREN || c === TOKEN.LEFT_PAREN || c === TOKEN.RIGHT_SQUARE || c === TOKEN.LEFT_SQUARE)
                     return -1;
                 return 0;
             }
@@ -444,7 +482,9 @@ const QuickMath = new function() {
         const TYPE = {
             LEFT_PAREN: -1,
             RIGHT_PAREN: -2,
-            OPERAND: -3
+            OPERAND: -3,
+            LEFT_SQUARE: -4,
+            RIGHT_SQUARE: -5
         };
 
         /**
@@ -485,6 +525,12 @@ const QuickMath = new function() {
         }
 
         function getType(token) {
+            switch (token) {
+                case TOKEN.LEFT_PAREN: return TYPE.LEFT_PAREN;
+                case TOKEN.RIGHT_PAREN: return TYPE.RIGHT_PAREN;
+                case TOKEN.LEFT_SQUARE: return TYPE.LEFT_SQUARE;
+                case TOKEN.RIGHT_SQUARE: return TYPE.RIGHT_SQUARE;
+            }
             if (token === TOKEN.LEFT_PAREN) {
                 return TYPE.LEFT_PAREN;
             }
@@ -512,6 +558,17 @@ const QuickMath = new function() {
                     while (operator !== TOKEN.LEFT_PAREN) {
                         if (operators.isEmpty()) {
                             throw new Error("Mismatched parenthesis");
+                        }
+                        output.push(operator);
+                        operator = operators.pop();
+                    }
+                } else if (type === TYPE.LEFT_SQUARE) {
+                    operators.push(token);
+                } else if (type === TYPE.RIGHT_SQUARE) {
+                    let operator = operators.pop();
+                    while (operator !== TOKEN.LEFT_SQUARE) {
+                        if (operators.isEmpty()) {
+                            throw new Error("Mismatched squares");
                         }
                         output.push(operator);
                         operator = operators.pop();
@@ -852,6 +909,9 @@ const QuickMath = new function() {
         formatLatex: formatLatex,
         parseLatex: parseLatex,
         latexToBasic: latexToBasic,
+        functions: functions,
         dev: dev
     }
 };
+
+// QuickMath.dev();

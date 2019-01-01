@@ -5,6 +5,19 @@
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="./css/mathquill.min.css">
     <link rel="stylesheet" href="./css/modal.css">
+    <style>
+        #toolbar-toggle {
+            transform: scaleY(0.4);
+        }
+        #toolbar-toggle-icon {
+            transition-property: transform;
+            transition-duration: 0.3s;
+        }
+        .inverted {
+            overflow: hidden;
+            transform: rotate(180deg);
+        }
+    </style>
 </head>
 <body>
 
@@ -18,7 +31,17 @@
             WebWork+
             <button type="button" class="close float-right" id="closeBtn"><span>&times;</span></button>
         </div>
-        <div class="card-body">
+        <div class="card-body pt-0 pb-0">
+            <div id="toolbar">
+                <div class="collapse mt-2" id="toolbar-content" data-toggle="false">
+                    <div class="card card-body">
+                        Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident.
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm btn-block" role="button" id="toolbar-toggle" data-toggle="collapse" data-target="#toolbar-content">
+                    <svg class="m-auto" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" id="toolbar-toggle-icon"><path fill="none" d="M0 0h24v24H0V0z"/><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+                </button>
+            </div>
             <p id="quillWrapper"><span id="mathQuill" style="width: 100%;"></span></p>
         </div>
         <div class="card-footer">
@@ -27,10 +50,12 @@
     </div>
 </div>
 
-<script src="./js/jquery-1.7.2.min.js"></script>
 <script src="./js/quick-math.js"></script>
+<script src="./js/jquery-1.9.1.min.js"></script>
 <script src="./js/mathquill.min.js"></script>
+<script src="./js/bootstrap.min.js"></script>
 <script src="./js/main.js"></script>
+<script src="./js/toolbar.js"></script>
 
 </body>
 </html>

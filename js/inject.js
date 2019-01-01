@@ -88,8 +88,8 @@ function encapsulate() {
                     btn.style.cursor = "default";
                     setTimeout(() => {
                         btn.dataset.enabled = "false";
-                    }, 150);
-                }, 5);
+                    }, 500);
+                }, 50);
             });
 
             if (document.activeElement === input) {
