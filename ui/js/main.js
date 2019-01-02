@@ -1,3 +1,5 @@
+let QuillInterface;
+
 window.addEventListener("load", function() {
     const URLQuery = new function() {
         let dict = {};
@@ -28,7 +30,7 @@ window.addEventListener("load", function() {
     const mathField = MQuill.MathField(elem, {
         spaceBehavesLikeTab: true,
         autoCommands: 'pi theta sqrt',
-        autoOperatorNames: QuickMath.functions().replace(" sqrt", ""),  //remove the sqrt operator
+        autoOperatorNames: QuickMath.functions().join(" ").replace(" sqrt", ""),  //remove the sqrt operator
         handlers: {
             enter: function () {
                 send();
@@ -78,4 +80,13 @@ window.addEventListener("load", function() {
         mathField.latex(latex);
         mathField.focus();
     }
+
+    function command(string) {
+        mathField.typedText(string);
+        mathField.focus();
+    }
+
+    QuillInterface = {
+        command: command
+    };
 });

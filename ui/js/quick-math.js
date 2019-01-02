@@ -108,7 +108,7 @@ const QuickMath = new function() {
     const CONST_DELIM = "#";
 
     function buildFunctions() {
-        const NUMERIC = ["log", "logten", "sqrt", "abs", "int", "sgn", "ln"];
+        const NUMERIC = ["log", "sqrt", "abs", "int", "sgn", "ln"];
         const TRIG = ["sin", "cos", "tan", "sec", "csc", "cot"];
 
         let fn = [];
@@ -134,7 +134,7 @@ const QuickMath = new function() {
     }
 
     function functions() {
-        return FUNC_ARRAY.join(" ");
+        return FUNC_ARRAY;
     }
 
     const FUNC_ARRAY = buildFunctions();
