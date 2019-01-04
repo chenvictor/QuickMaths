@@ -72,6 +72,7 @@ const QuickMath = new function() {
         this.type = 6;
         this.name = _name;
         this.part = _part;
+        this.funcLog = _name === "log";
     }
 
     function QAbsolute(_part) {
@@ -79,10 +80,16 @@ const QuickMath = new function() {
         this.part = _part;
     }
 
-    function QLogarithm(_base, _part) {
+    function QIdentity(_part) {
         this.type = 8;
-        this.base = _base;
         this.part = _part;
+        this.isLog = false;
+        if (_part.type === 4) {
+            let num = _part.numerator;
+            let den = _part.denominator;
+            if ((num.isLog || num.funcLog) && (den.isLog || den.funcLog))
+                this.isLog = true;
+        }
     }
 
     /**
@@ -107,34 +114,28 @@ const QuickMath = new function() {
     const CONST_ARRAY = ["theta", "pi"];
     const CONST_DELIM = "#";
 
+    const FUNCTIONS =
+        (function() {
+            const trig = ["sin", "cos", "tan", "sec", "csc", "cot"];
+            let i_trig = trig.flatMap((t) => {return ["a" + t, "arc" + t]});
+            return {
+                NUMERIC:    new Set(["log", "sqrt", "abs", "int", "sgn", "ln"]),
+                TRIG:       new Set(trig),
+                I_TRIG:     new Set(i_trig),
+                H_TRIG:     new Set(trig.map((t) => (t + "h"))),
+                IH_TRIG:    new Set(i_trig.map((t) => (t + "h"))),
+                IDENTITY:   "id",
+            }
+        }());
+
     function buildFunctions() {
-        const NUMERIC = ["log", "sqrt", "abs", "int", "sgn", "ln"];
-        const TRIG = ["sin", "cos", "tan", "sec", "csc", "cot"];
-
-        let fn = [];
-        fn.push(...NUMERIC);
-        //inverse hyperbolic
-        TRIG.forEach((x) => {
-            fn.push("a" + x + "h");
-            fn.push("arc" + x + "h");
-        });
-        //simple hyperbolic
-        TRIG.forEach((x) => {
-            fn.push(x + "h");
-        });
-        //inverse trig
-        // fn.push("atan2");
-        TRIG.forEach((x) => {
-            fn.push("a" + x);
-            fn.push("arc" + x);
-        });
-        //simple trig
-        fn.push(...TRIG);
-        return fn;
-    }
-
-    function functions() {
-        return FUNC_ARRAY;
+        let array = [];
+        array.push(...FUNCTIONS.IH_TRIG);
+        array.push(...FUNCTIONS.I_TRIG);
+        array.push(...FUNCTIONS.H_TRIG);
+        array.push(...FUNCTIONS.TRIG);
+        array.push(...FUNCTIONS.NUMERIC);
+        return array;
     }
 
     const FUNC_ARRAY = buildFunctions();
@@ -186,7 +187,18 @@ const QuickMath = new function() {
                 ret = temp.join("");
                 break;
             case 3:
-                ret = qe.parts.map(function(x) {return format(x, 1)}).join(qe.explicit ? OP.E_PROD : "");
+                ret = qe.parts.map(function(x, idx, arr) {
+                    if (!qe.explicit && idx > 0) {
+                        if (x.type === 0 && arr[idx-1].type === 0) {
+                            if (!isNaN(parseFloat(x.part)) && !isNaN(parseFloat(arr[idx - 1].part))) {
+                                return format(x, 2);
+                            }
+                        } else if (x.type === 1) {
+                            return format(x, 2);
+                        }
+                    }
+                    return format(x, 1);
+                }).join(qe.explicit ? OP.E_PROD : "");
                 break;
             case 4:
                 ret = format(qe.numerator, 1) + OP.DIV + format(qe.denominator, 1);
@@ -205,6 +217,10 @@ const QuickMath = new function() {
                 if (parenLevel === 1) {
                     parenLevel = 0;
                 }
+                break;
+            case 8:
+                ret = "[" + format(qe.part) + "]";
+                parenLevel = 0;
                 break;
             default:
                 throw new Error("Unknown element type: " + qe);
@@ -236,7 +252,7 @@ const QuickMath = new function() {
             parenLevel = 1;
 
         //Special operators that MathQuill requires the use of the \operatorname tag
-        const opSet = new Set(["asin", "acos", "atan", "asinh", "acosh", "atanh", "acsch", "asech", "atanh"]);
+        const opSet = new Set(["asin", "acos", "atan", "asinh", "acosh", "atanh", "acsch", "asech", "atanh", "sgn", "int"]);
 
         let ret;
         switch (qe.type) {
@@ -267,7 +283,16 @@ const QuickMath = new function() {
             case 3:
                 if (parenLevel === 1)
                     parenLevel = 0;
-                ret = qe.parts.map(function (x) {
+                ret = qe.parts.map(function (x, idx, arr) {
+                    if (!qe.explicit && idx > 0) {
+                        if (x.type === 1) {
+                            return formatLatex(x, 2);
+                        } else if (x.type === 0 && arr[idx-1].type === 0) {
+                            if (!isNaN(parseFloat(x.part)) && !isNaN(parseFloat(arr[idx - 1].part))) {
+                                return formatLatex(x, 2);
+                            }
+                        }
+                    }
                     return formatLatex(x, 1);
                 }).join(qe.explicit ? "\\cdot " : "");
                 break;
@@ -297,6 +322,20 @@ const QuickMath = new function() {
             case 7:
                 parenLevel = 0; //abs work as parens
                 ret = "\\left|" + formatLatex(qe.part) + "\\right|";
+                break;
+            case 8:
+                if (qe.isLog === true) {
+                    let part = qe.part;
+                    ret = "\\log_{" +
+                        formatLatex(part.denominator.isLog ? part.denominator : part.denominator.part) +
+                        "}" +       //if log is nested, format that log as well
+                        formatLatex(part.numerator.isLog ? part.numerator : part.numerator.part, 2);
+                    if (parenLevel === 1) {
+                        parenLevel = 0;
+                    }
+                } else {
+                    return formatLatex(qe.part, parenLevel);
+                }
                 break;
             default:
                 console.error("Unknown element type: %o", qe);
@@ -341,6 +380,7 @@ const QuickMath = new function() {
                 let literal = CONST_DELIM + CONST_ARRAY[i] + CONST_DELIM;
                 result = replaceAll(result, filler, literal);
             }
+
 
             //Get unary (-) and (+) operators
             if (result.charAt(0) === OP.SUB) {
@@ -614,6 +654,8 @@ const QuickMath = new function() {
                             operands.push(new QNegated(op));
                         } else if (token.includes("abs")) {
                             operands.push(new QAbsolute(op));
+                        } else if (token === (UNARY_DELIM + FUNCTIONS.IDENTITY + UNARY_DELIM)) {
+                            operands.push(new QIdentity(op));
                         } else {
                             operands.push(new QFunction(token.slice(1, -1), op));
                         }
@@ -677,7 +719,12 @@ const QuickMath = new function() {
             let escaped = escape(string);
             log("Escaped:\t%o", escaped);
 
-            let product = implicitProduct(escaped);
+            // Identity function
+            let identity = replaceAll(escaped, TOKEN.LEFT_SQUARE, UNARY_DELIM + FUNCTIONS.IDENTITY + UNARY_DELIM + TOKEN.LEFT_PAREN);
+            identity = replaceAll(identity, TOKEN.RIGHT_SQUARE, TOKEN.RIGHT_PAREN);
+            log("Identity:\t%o", identity);
+
+            let product = implicitProduct(identity);
             log("Product:\t%o", product);
 
             let tokens = tokenize(product);
@@ -702,6 +749,11 @@ const QuickMath = new function() {
     }
 
     function latexToBasic(string) {
+
+        function isNumber(char) {
+            return "0" <= char && char <= "9";
+        }
+
         log("Latex:\t%o", string);
         // cdot => *
         let temp = replaceAll(string, "\\cdot", OP.E_PROD);
@@ -712,9 +764,8 @@ const QuickMath = new function() {
         // replace fractions
         while (true) {
             let frac = temp.indexOf("\\frac");
-            if (frac === -1) {
+            if (frac === -1)
                 break;
-            }
             //remove the found frac
             temp = temp.replace("\\frac", "");
             let parens = new ParenState();
@@ -763,6 +814,72 @@ const QuickMath = new function() {
         // remove \left and \right
         temp = replaceAll(temp, "\\left", "");
         temp = replaceAll(temp, "\\right", "");
+        // replace log with base
+        while (true) {
+            let log = temp.lastIndexOf("\\log_");
+            if (log === -1)
+                break;
+            //Capture log base, and numerator
+            let logBase = temp.charAt(log+5);
+            let logNumIdx = log + 6;
+            if (logBase === "{") {
+                //capture everything
+                let parens = new ParenState();
+                logBase = "";
+                for (let i = log + 6; i < temp.length; i++) {
+                    if (temp.charAt(i) === "{") {
+                        parens.inc();
+                    } else if (temp.charAt(i) === "}") {
+                        if(parens.dec()) {
+                            logNumIdx = i + 1;
+                            break;
+                        }
+                    } else {
+                        logBase += temp.charAt(i);
+                    }
+                }
+            }
+            let logNum = temp.charAt(logNumIdx);
+            if (logNum === TOKEN.LEFT_PAREN) {
+                //capture everything
+                let parens = new ParenState();
+                logNum = "";
+                for (let i = logNumIdx+1; i < temp.length; i++) {
+                    if (temp.charAt(i) === TOKEN.LEFT_PAREN) {
+                        parens.inc();
+                    } else if (temp.charAt(i) === TOKEN.RIGHT_PAREN) {
+                        if (parens.dec()) {
+                            logNumIdx = i;
+                            break;
+                        }
+                    } else {
+                        logNum += temp.charAt(i);
+                    }
+
+                }
+            } else if (isNumber(logNum)) {
+                while (isNumber(temp.charAt(++logNumIdx))) {
+                    logNum += temp.charAt(logNumIdx);
+                }
+            }
+            let formatted = TOKEN.LEFT_SQUARE;
+            if (logNum.charAt(0) === TOKEN.LEFT_SQUARE) {
+                //numerator is a log as well
+                formatted += logNum;
+            } else {
+                formatted += "log(" + logNum + ")";
+            }
+            formatted += OP.DIV;
+            if (logBase.charAt(0) === TOKEN.LEFT_SQUARE) {
+                formatted += logBase;
+            } else {
+                formatted += "log(" + logBase + ")";
+            }
+            formatted += TOKEN.RIGHT_SQUARE;
+            // replace contents with formatted
+            temp = temp.substring(0, log) + formatted + temp.substring(logNumIdx+1);
+        }
+
         // remove \
         temp = replaceAll(temp, "\\", "");
         // brackets -> parens
@@ -909,7 +1026,10 @@ const QuickMath = new function() {
         formatLatex: formatLatex,
         parseLatex: parseLatex,
         latexToBasic: latexToBasic,
-        functions: functions,
+        functions: function() {return FUNCTIONS},
+        functionsArray: function() {
+            return FUNC_ARRAY;
+        },
         dev: dev
     }
 };

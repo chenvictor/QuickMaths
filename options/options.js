@@ -54,15 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return Array.from(urlSet);
         }
 
-        WHITELIST.addEventListener("blur", () => {
-            if (selected !== null) {
-                selected.classList.remove('selected');
-                selected = null;
-            }
-        });
-
         document.getElementById("addWhitelistButton").addEventListener("click", () => {
-            let url = prompt("Enter a website url");
+            let url = prompt("Enter a domain url filter");
             WhitelistManager.add(url);
         });
 

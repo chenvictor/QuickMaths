@@ -30,7 +30,7 @@ window.addEventListener("load", function() {
     const mathField = MQuill.MathField(elem, {
         spaceBehavesLikeTab: true,
         autoCommands: 'pi theta sqrt',
-        autoOperatorNames: QuickMath.functions().join(" ").replace(" sqrt", ""),  //remove the sqrt operator
+        autoOperatorNames: QuickMath.functionsArray().join(" ").replace(" sqrt", ""),  //remove the sqrt operator
         handlers: {
             enter: function () {
                 send();
