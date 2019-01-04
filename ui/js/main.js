@@ -26,11 +26,13 @@ window.addEventListener("load", function() {
 
     const MQuill = MathQuill.getInterface(2);
     let elem = document.getElementById("mathQuill");
+    let mathMode = false;
 
     const mathField = MQuill.MathField(elem, {
         spaceBehavesLikeTab: true,
         autoCommands: 'pi theta sqrt',
         autoOperatorNames: QuickMath.functionsArray().join(" ").replace(" sqrt", ""),  //remove the sqrt operator
+        supSubsRequireOperand: true,
         handlers: {
             enter: function () {
                 send();
@@ -55,12 +57,14 @@ window.addEventListener("load", function() {
     });
 
     function escape() {
+        mathMode = false;
         top.postMessage({
             type: -1
         }, "*");
     }
 
     function send() {
+        mathMode = false;
         top.postMessage({
             type: 1,
             // input: QuickMath.latexToBasic(mathField.latex())
@@ -79,6 +83,7 @@ window.addEventListener("load", function() {
         let latex = QuickMath.formatLatex(parsed);
         mathField.latex(latex);
         mathField.focus();
+        mathMode = true;
     }
 
     function command(string) {
@@ -89,4 +94,19 @@ window.addEventListener("load", function() {
     QuillInterface = {
         command: command
     };
+
+    function stopKeys(event) {
+        const disallowed = new Set(["\\", "[", "]", "{", "}"]); //set of keys user cannot press while using math input
+        if (mathMode) {
+            if (disallowed.has(event.key)) {
+                event.stopPropagation();
+                event.preventDefault();
+                return false;
+            }
+        }
+    }
+
+    document.addEventListener("keydown", stopKeys);
+    document.addEventListener("keypress", stopKeys)
+
 });
