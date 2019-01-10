@@ -97,7 +97,7 @@ function encapsulate() {
                 input.blur();
                 setTimeout(() => {
                     input.focus();
-                }, 50);
+                }, 500);
             }
         }
 

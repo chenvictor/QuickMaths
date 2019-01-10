@@ -92,6 +92,11 @@ const QuickMath = new function() {
         }
     }
 
+    function QEquality(_parts) {
+        this.type = 9;
+        this.parts = _parts;
+    }
+
     /**
      * Constants used
      */
@@ -111,6 +116,7 @@ const QuickMath = new function() {
     };
 
     const OPERATORS = Object.values(OP);
+    const OP_EQUALITY = "=";
     const CONST_ARRAY = ["theta", "pi"];
     const CONST_DELIM = "#";
 
@@ -159,6 +165,9 @@ const QuickMath = new function() {
         if (parenLevel === undefined || parenLevel === null) {
             parenLevel = 0;
         }
+        if (parenLevel === 3 && qe.type !== 1) {
+            parenLevel = 1;
+        }
         let ret;
         switch (qe.type) {
             case 0:
@@ -204,7 +213,7 @@ const QuickMath = new function() {
                 ret = format(qe.numerator, 1) + OP.DIV + format(qe.denominator, 1);
                 break;
             case 5:
-                ret = format(qe.base, 1) + OP.EXP + format(qe.power, 1);
+                ret = format(qe.base, 1) + OP.EXP + format(qe.power, 3);
                 break;
             case 6:
                 if (parenLevel === 1) {
@@ -222,6 +231,8 @@ const QuickMath = new function() {
                 ret = "[" + format(qe.part) + "]";
                 parenLevel = 0;
                 break;
+            case 9:
+                return qe.parts.map(x => format(x)).join(OP_EQUALITY);
             default:
                 throw new Error("Unknown element type: " + qe);
         }
@@ -337,6 +348,8 @@ const QuickMath = new function() {
                     return formatLatex(qe.part, parenLevel);
                 }
                 break;
+            case 9:
+                return qe.parts.map(x => formatLatex(x)).join(OP_EQUALITY);
             default:
                 console.error("Unknown element type: %o", qe);
                 throw new Error("");
@@ -345,6 +358,15 @@ const QuickMath = new function() {
     }
 
     function parse(string) {
+        let parts = string.split(OP_EQUALITY);
+        parts = parts.map(x => parseSub(x));
+        if (parts.length === 1) {
+            return parts[0];
+        }
+        return new QEquality(parts);
+    }
+
+    function parseSub(string) {
 
         if (string === undefined || string === null || string.length === 0) {
             return null;
@@ -1034,4 +1056,4 @@ const QuickMath = new function() {
     }
 };
 
-// QuickMath.dev();
+QuickMath.dev();
